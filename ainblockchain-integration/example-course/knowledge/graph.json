@@ -1,0 +1,793 @@
+{
+  "nodes": [
+    {
+      "id": "transformer_architecture",
+      "name": "Transformer Architecture",
+      "type": "architecture",
+      "level": "foundational",
+      "description": "The foundational architecture for modern NLP, based on self-attention mechanisms.",
+      "key_ideas": [
+        "Self-attention",
+        "Encoder-Decoder structure",
+        "Parallelization",
+        "Positional Encoding"
+      ],
+      "code_refs": [
+        "src/transformers/models/transformer.py"
+      ],
+      "paper_ref": "Vaswani et al., 2017 \u2014 Attention Is All You Need",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "self_attention",
+      "name": "Self-Attention",
+      "type": "component",
+      "level": "foundational",
+      "description": "A mechanism allowing the model to weigh the importance of different parts of the input sequence.",
+      "key_ideas": [
+        "Query, Key, Value",
+        "Scaled Dot-Product Attention",
+        "Multi-Head Attention"
+      ],
+      "code_refs": [
+        "src/transformers/models/transformer.py",
+        "src/transformers/modeling_utils.py"
+      ],
+      "paper_ref": "Vaswani et al., 2017 \u2014 Attention Is All You Need",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "positional_encoding",
+      "name": "Positional Encoding",
+      "type": "component",
+      "level": "foundational",
+      "description": "Adds information about the position of tokens in the sequence, as self-attention is permutation-invariant.",
+      "key_ideas": [
+        "Sine and Cosine functions",
+        "Learnable embeddings"
+      ],
+      "code_refs": [
+        "src/transformers/models/transformer.py"
+      ],
+      "paper_ref": "Vaswani et al., 2017 \u2014 Attention Is All You Need",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "layer_normalization",
+      "name": "Layer Normalization",
+      "type": "component",
+      "level": "intermediate",
+      "description": "Normalizes the activations of each layer, improving training stability and performance.",
+      "key_ideas": [
+        "Normalization across features",
+        "Learnable scale and bias"
+      ],
+      "code_refs": [
+        "src/transformers/models/transformer.py"
+      ],
+      "paper_ref": "Ba et al., 2016 \u2014 Layer Normalization",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "feed_forward_network",
+      "name": "Feed Forward Network",
+      "type": "component",
+      "level": "intermediate",
+      "description": "A fully connected network applied to each position independently, providing non-linearity.",
+      "key_ideas": [
+        "Two linear layers with activation function"
+      ],
+      "code_refs": [
+        "src/transformers/models/transformer.py"
+      ],
+      "paper_ref": "Vaswani et al., 2017 \u2014 Attention Is All You Need",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "bert",
+      "name": "BERT",
+      "type": "architecture",
+      "level": "intermediate",
+      "description": "Bidirectional Encoder Representations from Transformers, a pre-trained language model.",
+      "key_ideas": [
+        "Masked Language Modeling",
+        "Next Sentence Prediction",
+        "Bidirectional context"
+      ],
+      "code_refs": [
+        "src/transformers/models/bert.py"
+      ],
+      "paper_ref": "Devlin et al., 2018 \u2014 BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "gpt",
+      "name": "GPT",
+      "type": "architecture",
+      "level": "intermediate",
+      "description": "Generative Pre-trained Transformer, a decoder-only language model.",
+      "key_ideas": [
+        "Causal language modeling",
+        "Decoder-only architecture"
+      ],
+      "code_refs": [
+        "src/transformers/models/gpt.py"
+      ],
+      "paper_ref": "Radford et al., 2018 \u2014 Improving Language Understanding by Generative Pre-Training",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "t5",
+      "name": "T5",
+      "type": "architecture",
+      "level": "intermediate",
+      "description": "Text-to-Text Transfer Transformer, a unified framework for all NLP tasks.",
+      "key_ideas": [
+        "Text-to-text format",
+        "Encoder-decoder architecture"
+      ],
+      "code_refs": [
+        "src/transformers/models/t5.py"
+      ],
+      "paper_ref": "Raffel et al., 2019 \u2014 Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "flash_attention",
+      "name": "Flash Attention",
+      "type": "technique",
+      "level": "advanced",
+      "description": "An optimized attention mechanism for faster and more memory-efficient training.",
+      "key_ideas": [
+        "Tiling",
+        "Recomputation"
+      ],
+      "code_refs": [],
+      "paper_ref": "Dao et al., 2022 \u2014 FlashAttention: Fast and Efficient Transformer Attention with IO-Awareness",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "quantization",
+      "name": "Quantization",
+      "type": "optimization",
+      "level": "advanced",
+      "description": "Reducing the precision of model weights and activations to reduce memory usage and improve inference speed.",
+      "key_ideas": [
+        "Post-training quantization",
+        "Quantization-aware training"
+      ],
+      "code_refs": [],
+      "paper_ref": "Jacob et al., 2018 \u2014 Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "rope",
+      "name": "RoPE (Rotary Positional Embedding)",
+      "type": "technique",
+      "level": "intermediate",
+      "description": "A positional embedding scheme that uses rotation matrices to encode positional information.",
+      "key_ideas": [
+        "Rotation matrices",
+        "Relative positional encoding"
+      ],
+      "code_refs": [],
+      "paper_ref": "Su et al., 2021 \u2014 RoPE: Designing All-Retention Transformer with Rotary Position Embedding",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "moe",
+      "name": "Mixture of Experts (MoE)",
+      "type": "technique",
+      "level": "advanced",
+      "description": "A technique that uses multiple 'expert' networks and a gating network to route inputs to the most relevant experts.",
+      "key_ideas": [
+        "Sparse activation",
+        "Gating network",
+        "Increased model capacity"
+      ],
+      "code_refs": [],
+      "paper_ref": "Shazeer et al., 2017 \u2014 Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "llama",
+      "name": "LLaMA",
+      "type": "architecture",
+      "level": "advanced",
+      "description": "Large Language Model Meta AI, a collection of open-source large language models.",
+      "key_ideas": [
+        "Decoder-only architecture",
+        "Pre-training on large datasets"
+      ],
+      "code_refs": [],
+      "paper_ref": "Touvron et al., 2023 \u2014 LLaMA: Open and Efficient Foundation Language Models",
+      "first_appeared": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "mixtral_8x22b",
+      "name": "Mixtral 8x22B",
+      "type": "architecture",
+      "level": "advanced",
+      "description": "A sparse mixture-of-experts model with 8 experts, each with 22 billion parameters, achieving strong performance with efficient inference.",
+      "key_ideas": [
+        "Sparse MoE",
+        "High parameter count",
+        "Efficient inference",
+        "Open-source"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.95
+    },
+    {
+      "id": "qwen2_72b",
+      "name": "Qwen2 72B",
+      "type": "architecture",
+      "level": "advanced",
+      "description": "A 72 billion parameter language model from Alibaba, demonstrating strong multilingual capabilities and performance.",
+      "key_ideas": [
+        "Large scale",
+        "Multilingual",
+        "Decoder-only",
+        "Open-source"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.9
+    },
+    {
+      "id": "gemma_2b_7b",
+      "name": "Gemma 2B/7B",
+      "type": "architecture",
+      "level": "intermediate",
+      "description": "A family of lightweight, open-source language models from Google, designed for responsible AI development and accessibility.",
+      "key_ideas": [
+        "Lightweight",
+        "Open-source",
+        "Responsible AI",
+        "Decoder-only"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "deepseek_v2",
+      "name": "DeepSeek-V2",
+      "type": "architecture",
+      "level": "advanced",
+      "description": "A series of language models focusing on code generation and reasoning, known for its strong performance on coding benchmarks.",
+      "key_ideas": [
+        "Code generation",
+        "Reasoning",
+        "Large scale",
+        "Decoder-only"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "command_r_plus",
+      "name": "Command R+",
+      "type": "architecture",
+      "level": "advanced",
+      "description": "A strong open-source model from Cohere, designed for enterprise use cases and instruction following.",
+      "key_ideas": [
+        "Instruction following",
+        "Enterprise focus",
+        "Open-source",
+        "Decoder-only"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "ring_attention",
+      "name": "Ring Attention",
+      "type": "technique",
+      "level": "frontier",
+      "description": "An attention mechanism that reduces computational complexity by representing attention weights as a ring structure, enabling efficient long-sequence processing.",
+      "key_ideas": [
+        "Linear attention",
+        "Long sequence",
+        "Efficiency",
+        "Approximation"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "speculative_decoding_v2",
+      "name": "Speculative Decoding v2",
+      "type": "technique",
+      "level": "advanced",
+      "description": "An improved version of speculative decoding that uses a smaller 'draft' model to predict tokens, which are then verified by a larger model, accelerating inference.",
+      "key_ideas": [
+        "Inference speedup",
+        "Draft model",
+        "Verification",
+        "Parallelism"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "mqa_routing",
+      "name": "Multi-Query Attention Routing",
+      "type": "technique",
+      "level": "advanced",
+      "description": "An advanced MoE routing strategy that shares key and value projections across experts, reducing memory overhead and improving scalability.",
+      "key_ideas": [
+        "MoE",
+        "Routing",
+        "Memory efficiency",
+        "Scalability"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.75
+    },
+    {
+      "id": "awq_quantization",
+      "name": "AWQ Quantization",
+      "type": "optimization",
+      "level": "advanced",
+      "description": "A quantization technique that focuses on protecting the weights most crucial for performance, achieving high compression rates with minimal accuracy loss.",
+      "key_ideas": [
+        "Quantization",
+        "Weight protection",
+        "Accuracy preservation",
+        "Compression"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "state_space_models",
+      "name": "State Space Models (SSMs)",
+      "type": "architecture",
+      "level": "frontier",
+      "description": "A class of models offering an alternative to transformers for sequential data, potentially more efficient for very long sequences.",
+      "key_ideas": [
+        "Sequential data",
+        "Long sequences",
+        "Efficiency",
+        "Alternative to transformers"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.7
+    },
+    {
+      "id": "hyena_hierarchy",
+      "name": "Hyena Hierarchy",
+      "type": "architecture",
+      "level": "frontier",
+      "description": "A hierarchical extension of Hyena operators, aiming to improve long-context handling and scalability beyond standard transformers and SSMs.",
+      "key_ideas": [
+        "Long context",
+        "Hierarchical structure",
+        "Implicit convolutions",
+        "Efficient scaling"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "flashdecode",
+      "name": "FlashDecode",
+      "type": "optimization",
+      "level": "advanced",
+      "description": "A hardware-aware decoding optimization technique that leverages tiling and recomputation to accelerate inference speed, particularly for long sequences.",
+      "key_ideas": [
+        "Hardware acceleration",
+        "Tiling",
+        "Recomputation",
+        "Long sequence decoding"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.9
+    },
+    {
+      "id": "gated_linear_units",
+      "name": "Gated Linear Units (GLU)",
+      "type": "component",
+      "level": "intermediate",
+      "description": "A simple yet effective activation function that uses a gating mechanism to control the flow of information, often replacing ReLU in modern architectures.",
+      "key_ideas": [
+        "Gating mechanism",
+        "Non-linearity",
+        "Improved performance",
+        "Parameter efficiency"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "mamba_ssm",
+      "name": "Mamba SSM",
+      "type": "architecture",
+      "level": "frontier",
+      "description": "A selective state space model that dynamically filters information based on input, offering improved performance and efficiency compared to traditional SSMs.",
+      "key_ideas": [
+        "Selective SSM",
+        "Dynamic filtering",
+        "Long-range dependencies",
+        "Efficient inference"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.95
+    },
+    {
+      "id": "grouped_query_attention",
+      "name": "Grouped-Query Attention (GQA)",
+      "type": "technique",
+      "level": "advanced",
+      "description": "A variation of multi-query attention that groups the queries, striking a balance between performance and memory efficiency.",
+      "key_ideas": [
+        "Query grouping",
+        "Memory efficiency",
+        "Performance optimization",
+        "Attention scaling"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "sparse_moe_routing",
+      "name": "Sparse MoE Routing with Differentiable Top-K",
+      "type": "technique",
+      "level": "advanced",
+      "description": "An advanced MoE routing technique that uses a differentiable top-k selection to improve routing stability and performance, enabling more effective sparse activation.",
+      "key_ideas": [
+        "Sparse activation",
+        "Differentiable top-k",
+        "Routing stability",
+        "MoE efficiency"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "int4_awq",
+      "name": "INT4 AWQ Quantization",
+      "type": "optimization",
+      "level": "advanced",
+      "description": "Extends AWQ quantization to INT4 precision, further reducing model size and improving inference speed with minimal performance degradation.",
+      "key_ideas": [
+        "INT4 precision",
+        "AWQ quantization",
+        "Model compression",
+        "Inference speed"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.9
+    },
+    {
+      "id": "retrieval_augmented_generation_v2",
+      "name": "Retrieval-Augmented Generation v2 (RAGv2)",
+      "type": "application",
+      "level": "advanced",
+      "description": "An improved RAG framework that incorporates learned retrieval mechanisms and end-to-end training for more accurate and relevant knowledge integration.",
+      "key_ideas": [
+        "Knowledge retrieval",
+        "End-to-end training",
+        "Learned retrieval",
+        "Contextualization"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.8
+    },
+    {
+      "id": "long_context_attention_kernels",
+      "name": "Linear Attention Kernels",
+      "type": "technique",
+      "level": "frontier",
+      "description": "Novel attention kernels that approximate full attention with linear complexity, enabling processing of extremely long sequences.",
+      "key_ideas": [
+        "Linear complexity",
+        "Long sequences",
+        "Attention approximation",
+        "Scalability"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.85
+    },
+    {
+      "id": "mixture_of_state_spaces",
+      "name": "Mixture of State Spaces (MoSS)",
+      "type": "architecture",
+      "level": "frontier",
+      "description": "Combines the benefits of state space models and mixture of experts, allowing for efficient modeling of complex sequential data with diverse dependencies.",
+      "key_ideas": [
+        "State space models",
+        "Mixture of experts",
+        "Sequential data",
+        "Efficient modeling"
+      ],
+      "code_refs": [],
+      "paper_ref": "",
+      "first_appeared": null,
+      "confidence": 0.75
+    }
+  ],
+  "edges": [
+    {
+      "source": "self_attention",
+      "target": "transformer_architecture",
+      "relationship": "component_of",
+      "weight": 1.0,
+      "description": "Self-attention is a core component of the Transformer architecture."
+    },
+    {
+      "source": "positional_encoding",
+      "target": "transformer_architecture",
+      "relationship": "component_of",
+      "weight": 1.0,
+      "description": "Positional encoding is used in conjunction with self-attention in the Transformer architecture."
+    },
+    {
+      "source": "layer_normalization",
+      "target": "transformer_architecture",
+      "relationship": "component_of",
+      "weight": 1.0,
+      "description": "Layer normalization is often used within Transformer layers to improve training."
+    },
+    {
+      "source": "feed_forward_network",
+      "target": "transformer_architecture",
+      "relationship": "component_of",
+      "weight": 1.0,
+      "description": "Feed forward networks are a key component of each Transformer layer."
+    },
+    {
+      "source": "transformer_architecture",
+      "target": "bert",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "BERT is built upon the Transformer architecture."
+    },
+    {
+      "source": "transformer_architecture",
+      "target": "gpt",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "GPT is built upon the Transformer architecture."
+    },
+    {
+      "source": "transformer_architecture",
+      "target": "t5",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "T5 is built upon the Transformer architecture."
+    },
+    {
+      "source": "flash_attention",
+      "target": "self_attention",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "Flash Attention optimizes the self-attention mechanism for performance."
+    },
+    {
+      "source": "quantization",
+      "target": "transformer_architecture",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "Quantization can be applied to Transformer architectures to reduce their size and improve inference speed."
+    },
+    {
+      "source": "rope",
+      "target": "positional_encoding",
+      "relationship": "variant_of",
+      "weight": 1.0,
+      "description": "RoPE is a specific type of positional encoding."
+    },
+    {
+      "source": "moe",
+      "target": "transformer_architecture",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "MoE can be integrated into Transformer architectures to increase capacity and performance."
+    },
+    {
+      "source": "llama",
+      "target": "transformer_architecture",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "LLaMA is built upon the Transformer architecture."
+    },
+    {
+      "source": "mixtral_8x22b",
+      "target": "moe",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Mixtral 8x22B is based on the Mixture of Experts architecture."
+    },
+    {
+      "source": "mixtral_8x22b",
+      "target": "transformer_architecture",
+      "relationship": "evolves_to",
+      "weight": 1.0,
+      "description": "Mixtral 8x22B represents an evolution of the transformer architecture using sparse MoE."
+    },
+    {
+      "source": "qwen2_72b",
+      "target": "transformer_architecture",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Qwen2 72B is built upon the transformer architecture."
+    },
+    {
+      "source": "gemma_2b_7b",
+      "target": "transformer_architecture",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Gemma models are based on the transformer architecture."
+    },
+    {
+      "source": "deepseek_v2",
+      "target": "transformer_architecture",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "DeepSeek-V2 is built upon the transformer architecture."
+    },
+    {
+      "source": "command_r_plus",
+      "target": "transformer_architecture",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Command R+ is built upon the transformer architecture."
+    },
+    {
+      "source": "ring_attention",
+      "target": "self_attention",
+      "relationship": "alternative_to",
+      "weight": 1.0,
+      "description": "Ring attention offers an alternative to standard self-attention for improved efficiency."
+    },
+    {
+      "source": "speculative_decoding_v2",
+      "target": "gpt",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "Speculative decoding v2 optimizes inference speed for decoder-only models like GPT."
+    },
+    {
+      "source": "mqa_routing",
+      "target": "moe",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "MQA routing optimizes the routing process within Mixture of Experts models."
+    },
+    {
+      "source": "awq_quantization",
+      "target": "quantization",
+      "relationship": "variant_of",
+      "weight": 1.0,
+      "description": "AWQ quantization is a specific variant of the quantization technique."
+    },
+    {
+      "source": "state_space_models",
+      "target": "transformer_architecture",
+      "relationship": "alternative_to",
+      "weight": 1.0,
+      "description": "State Space Models are presented as an alternative to the Transformer architecture."
+    },
+    {
+      "source": "transformer_architecture",
+      "target": "hyena_hierarchy",
+      "relationship": "evolves_to",
+      "weight": 1.0,
+      "description": "Hyena Hierarchy builds upon the transformer architecture to address long-context limitations."
+    },
+    {
+      "source": "flash_attention",
+      "target": "flashdecode",
+      "relationship": "optimizes",
+      "weight": 1.0,
+      "description": "FlashDecode optimizes the decoding process building on the principles of Flash Attention."
+    },
+    {
+      "source": "feed_forward_network",
+      "target": "gated_linear_units",
+      "relationship": "variant_of",
+      "weight": 1.0,
+      "description": "Gated Linear Units are a variant of the feed-forward network activation function."
+    },
+    {
+      "source": "state_space_models",
+      "target": "mamba_ssm",
+      "relationship": "evolves_to",
+      "weight": 1.0,
+      "description": "Mamba SSM is an advanced evolution of traditional State Space Models."
+    },
+    {
+      "source": "self_attention",
+      "target": "grouped_query_attention",
+      "relationship": "variant_of",
+      "weight": 1.0,
+      "description": "Grouped-Query Attention is a variant of self-attention designed for efficiency."
+    },
+    {
+      "source": "moe",
+      "target": "sparse_moe_routing",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Sparse MoE Routing builds on the Mixture of Experts technique for improved performance."
+    },
+    {
+      "source": "quantization",
+      "target": "int4_awq",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "INT4 AWQ Quantization builds on AWQ quantization to achieve even greater compression."
+    },
+    {
+      "source": "gpt",
+      "target": "retrieval_augmented_generation_v2",
+      "relationship": "enables",
+      "weight": 1.0,
+      "description": "RAGv2 enhances generative models like GPT with external knowledge."
+    },
+    {
+      "source": "self_attention",
+      "target": "long_context_attention_kernels",
+      "relationship": "alternative_to",
+      "weight": 1.0,
+      "description": "Linear Attention Kernels provide an alternative to standard self-attention for long sequences."
+    },
+    {
+      "source": "state_space_models",
+      "target": "mixture_of_state_spaces",
+      "relationship": "builds_on",
+      "weight": 1.0,
+      "description": "Mixture of State Spaces combines SSMs with MoE for enhanced modeling capabilities."
+    }
+  ]
+}
