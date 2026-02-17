@@ -1,0 +1,254 @@
+{
+  "provider_url": "http://localhost:8081",
+  "chain_id": 0,
+  "topic_prefix": "transformers/foundations",
+  "topic_map": {
+    "transformer_architecture": "transformers/foundations/transformer_architecture",
+    "self_attention": "transformers/foundations/self_attention",
+    "positional_encoding": "transformers/foundations/positional_encoding",
+    "layer_normalization": "transformers/foundations/layer_normalization",
+    "feed_forward_network": "transformers/foundations/feed_forward_network",
+    "bert": "transformers/foundations/bert",
+    "gpt": "transformers/foundations/gpt",
+    "t5": "transformers/foundations/t5",
+    "flash_attention": "transformers/foundations/flash_attention",
+    "quantization": "transformers/foundations/quantization",
+    "rope": "transformers/foundations/rope",
+    "moe": "transformers/foundations/moe",
+    "llama": "transformers/foundations/llama",
+    "mixtral_8x22b": "transformers/foundations/mixtral_8x22b",
+    "qwen2_72b": "transformers/foundations/qwen2_72b",
+    "gemma_2b_7b": "transformers/foundations/gemma_2b_7b",
+    "deepseek_v2": "transformers/foundations/deepseek_v2",
+    "command_r_plus": "transformers/foundations/command_r_plus",
+    "ring_attention": "transformers/foundations/ring_attention",
+    "speculative_decoding_v2": "transformers/foundations/speculative_decoding_v2",
+    "mqa_routing": "transformers/foundations/mqa_routing",
+    "awq_quantization": "transformers/foundations/awq_quantization",
+    "state_space_models": "transformers/foundations/state_space_models",
+    "hyena_hierarchy": "transformers/foundations/hyena_hierarchy",
+    "flashdecode": "transformers/foundations/flashdecode",
+    "gated_linear_units": "transformers/foundations/gated_linear_units",
+    "mamba_ssm": "transformers/foundations/mamba_ssm",
+    "grouped_query_attention": "transformers/foundations/grouped_query_attention",
+    "sparse_moe_routing": "transformers/foundations/sparse_moe_routing",
+    "int4_awq": "transformers/foundations/int4_awq",
+    "retrieval_augmented_generation_v2": "transformers/foundations/retrieval_augmented_generation_v2",
+    "long_context_attention_kernels": "transformers/foundations/long_context_attention_kernels",
+    "mixture_of_state_spaces": "transformers/foundations/mixture_of_state_spaces"
+  },
+  "depth_map": {
+    "transformer_architecture": 1,
+    "self_attention": 1,
+    "positional_encoding": 1,
+    "layer_normalization": 2,
+    "feed_forward_network": 2,
+    "bert": 2,
+    "gpt": 2,
+    "t5": 2,
+    "flash_attention": 3,
+    "quantization": 3,
+    "rope": 2,
+    "moe": 3,
+    "llama": 3,
+    "mixtral_8x22b": 3,
+    "qwen2_72b": 3,
+    "gemma_2b_7b": 2,
+    "deepseek_v2": 3,
+    "command_r_plus": 3,
+    "ring_attention": 4,
+    "speculative_decoding_v2": 3,
+    "mqa_routing": 3,
+    "awq_quantization": 3,
+    "state_space_models": 4,
+    "hyena_hierarchy": 4,
+    "flashdecode": 3,
+    "gated_linear_units": 2,
+    "mamba_ssm": 4,
+    "grouped_query_attention": 3,
+    "sparse_moe_routing": 3,
+    "int4_awq": 3,
+    "retrieval_augmented_generation_v2": 3,
+    "long_context_attention_kernels": 4,
+    "mixture_of_state_spaces": 4
+  },
+  "topics_to_register": [
+    {
+      "path": "transformers",
+      "title": "Transformers",
+      "description": "Transformer architecture learning topics"
+    },
+    {
+      "path": "transformers/foundations",
+      "title": "Foundations",
+      "description": "Topics for foundations course"
+    },
+    {
+      "path": "transformers/foundations/transformer_architecture",
+      "title": "Transformer Architecture",
+      "description": "The foundational architecture for modern NLP, based on self-attention mechanisms."
+    },
+    {
+      "path": "transformers/foundations/self_attention",
+      "title": "Self-Attention",
+      "description": "A mechanism allowing the model to weigh the importance of different parts of the input sequence."
+    },
+    {
+      "path": "transformers/foundations/positional_encoding",
+      "title": "Positional Encoding",
+      "description": "Adds information about the position of tokens in the sequence, as self-attention is permutation-invariant."
+    },
+    {
+      "path": "transformers/foundations/layer_normalization",
+      "title": "Layer Normalization",
+      "description": "Normalizes the activations of each layer, improving training stability and performance."
+    },
+    {
+      "path": "transformers/foundations/feed_forward_network",
+      "title": "Feed Forward Network",
+      "description": "A fully connected network applied to each position independently, providing non-linearity."
+    },
+    {
+      "path": "transformers/foundations/bert",
+      "title": "BERT",
+      "description": "Bidirectional Encoder Representations from Transformers, a pre-trained language model."
+    },
+    {
+      "path": "transformers/foundations/gpt",
+      "title": "GPT",
+      "description": "Generative Pre-trained Transformer, a decoder-only language model."
+    },
+    {
+      "path": "transformers/foundations/t5",
+      "title": "T5",
+      "description": "Text-to-Text Transfer Transformer, a unified framework for all NLP tasks."
+    },
+    {
+      "path": "transformers/foundations/flash_attention",
+      "title": "Flash Attention",
+      "description": "An optimized attention mechanism for faster and more memory-efficient training."
+    },
+    {
+      "path": "transformers/foundations/quantization",
+      "title": "Quantization",
+      "description": "Reducing the precision of model weights and activations to reduce memory usage and improve inference speed."
+    },
+    {
+      "path": "transformers/foundations/rope",
+      "title": "RoPE (Rotary Positional Embedding)",
+      "description": "A positional embedding scheme that uses rotation matrices to encode positional information."
+    },
+    {
+      "path": "transformers/foundations/moe",
+      "title": "Mixture of Experts (MoE)",
+      "description": "A technique that uses multiple 'expert' networks and a gating network to route inputs to the most relevant experts."
+    },
+    {
+      "path": "transformers/foundations/llama",
+      "title": "LLaMA",
+      "description": "Large Language Model Meta AI, a collection of open-source large language models."
+    },
+    {
+      "path": "transformers/foundations/mixtral_8x22b",
+      "title": "Mixtral 8x22B",
+      "description": "A sparse mixture-of-experts model with 8 experts, each with 22 billion parameters, achieving strong performance with efficient inference."
+    },
+    {
+      "path": "transformers/foundations/qwen2_72b",
+      "title": "Qwen2 72B",
+      "description": "A 72 billion parameter language model from Alibaba, demonstrating strong multilingual capabilities and performance."
+    },
+    {
+      "path": "transformers/foundations/gemma_2b_7b",
+      "title": "Gemma 2B/7B",
+      "description": "A family of lightweight, open-source language models from Google, designed for responsible AI development and accessibility."
+    },
+    {
+      "path": "transformers/foundations/deepseek_v2",
+      "title": "DeepSeek-V2",
+      "description": "A series of language models focusing on code generation and reasoning, known for its strong performance on coding benchmarks."
+    },
+    {
+      "path": "transformers/foundations/command_r_plus",
+      "title": "Command R+",
+      "description": "A strong open-source model from Cohere, designed for enterprise use cases and instruction following."
+    },
+    {
+      "path": "transformers/foundations/ring_attention",
+      "title": "Ring Attention",
+      "description": "An attention mechanism that reduces computational complexity by representing attention weights as a ring structure, enabling efficient long-sequence processing."
+    },
+    {
+      "path": "transformers/foundations/speculative_decoding_v2",
+      "title": "Speculative Decoding v2",
+      "description": "An improved version of speculative decoding that uses a smaller 'draft' model to predict tokens, which are then verified by a larger model, accelerating inference."
+    },
+    {
+      "path": "transformers/foundations/mqa_routing",
+      "title": "Multi-Query Attention Routing",
+      "description": "An advanced MoE routing strategy that shares key and value projections across experts, reducing memory overhead and improving scalability."
+    },
+    {
+      "path": "transformers/foundations/awq_quantization",
+      "title": "AWQ Quantization",
+      "description": "A quantization technique that focuses on protecting the weights most crucial for performance, achieving high compression rates with minimal accuracy loss."
+    },
+    {
+      "path": "transformers/foundations/state_space_models",
+      "title": "State Space Models (SSMs)",
+      "description": "A class of models offering an alternative to transformers for sequential data, potentially more efficient for very long sequences."
+    },
+    {
+      "path": "transformers/foundations/hyena_hierarchy",
+      "title": "Hyena Hierarchy",
+      "description": "A hierarchical extension of Hyena operators, aiming to improve long-context handling and scalability beyond standard transformers and SSMs."
+    },
+    {
+      "path": "transformers/foundations/flashdecode",
+      "title": "FlashDecode",
+      "description": "A hardware-aware decoding optimization technique that leverages tiling and recomputation to accelerate inference speed, particularly for long sequences."
+    },
+    {
+      "path": "transformers/foundations/gated_linear_units",
+      "title": "Gated Linear Units (GLU)",
+      "description": "A simple yet effective activation function that uses a gating mechanism to control the flow of information, often replacing ReLU in modern architectures."
+    },
+    {
+      "path": "transformers/foundations/mamba_ssm",
+      "title": "Mamba SSM",
+      "description": "A selective state space model that dynamically filters information based on input, offering improved performance and efficiency compared to traditional SSMs."
+    },
+    {
+      "path": "transformers/foundations/grouped_query_attention",
+      "title": "Grouped-Query Attention (GQA)",
+      "description": "A variation of multi-query attention that groups the queries, striking a balance between performance and memory efficiency."
+    },
+    {
+      "path": "transformers/foundations/sparse_moe_routing",
+      "title": "Sparse MoE Routing with Differentiable Top-K",
+      "description": "An advanced MoE routing technique that uses a differentiable top-k selection to improve routing stability and performance, enabling more effective sparse activation."
+    },
+    {
+      "path": "transformers/foundations/int4_awq",
+      "title": "INT4 AWQ Quantization",
+      "description": "Extends AWQ quantization to INT4 precision, further reducing model size and improving inference speed with minimal performance degradation."
+    },
+    {
+      "path": "transformers/foundations/retrieval_augmented_generation_v2",
+      "title": "Retrieval-Augmented Generation v2 (RAGv2)",
+      "description": "An improved RAG framework that incorporates learned retrieval mechanisms and end-to-end training for more accurate and relevant knowledge integration."
+    },
+    {
+      "path": "transformers/foundations/long_context_attention_kernels",
+      "title": "Linear Attention Kernels",
+      "description": "Novel attention kernels that approximate full attention with linear complexity, enabling processing of extremely long sequences."
+    },
+    {
+      "path": "transformers/foundations/mixture_of_state_spaces",
+      "title": "Mixture of State Spaces (MoSS)",
+      "description": "Combines the benefits of state space models and mixture of experts, allowing for efficient modeling of complex sequential data with diverse dependencies."
+    }
+  ],
+  "x402_lessons": {},
+  "ain_js_path": "/home/comcom/git/ain-js/lib/ain.js"
+}
