@@ -1,21 +1,36 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import { LayoutWrapper } from '@/components/layout/LayoutWrapper';
+import { AuthProvider } from '@/providers/AuthProvider';
+
+const geistSans = Geist({
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+});
+
+const geistMono = Geist_Mono({
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+});
 
 export const metadata: Metadata = {
-  title: 'Hackathon LMS',
-  description: 'Learning Management System for Hackathon',
-}
+  title: 'Papers with Claude Code',
+  description: 'Learn research papers interactively with AI-powered dungeon exploration',
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="ko">
-      <body>
-        <main className="min-h-screen">{children}</main>
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>
+          <LayoutWrapper>{children}</LayoutWrapper>
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }
