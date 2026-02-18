@@ -451,12 +451,12 @@ class Scaffolder:
         kg: KnowledgeGraph,
         courses: list[Course],
         enable_blockchain: bool = False,
-        ain_js_branch: str = "feat/knowledge-module",
+        ain_js_version: str = "^1.14.0",
     ):
         self.kg = kg
         self.courses = courses
         self.enable_blockchain = enable_blockchain
-        self.ain_js_branch = ain_js_branch
+        self.ain_js_version = ain_js_version
 
     def scaffold(self, output_dir: str | Path, repo_path: Optional[str | Path] = None) -> Path:
         """Generate the complete course repo.
@@ -579,19 +579,18 @@ class Scaffolder:
         )
         logger.info("Wrote blockchain/config.json")
 
-        # package.json — installs ain-js from the specified git branch
-        ain_js_ref = f"github:ainblockchain/ain-js#{self.ain_js_branch}"
+        # package.json — installs ain-js from npm
         package_json = {
             "name": "blockchain-helper",
             "private": True,
             "dependencies": {
-                "@ainblockchain/ain-js": ain_js_ref,
+                "@ainblockchain/ain-js": self.ain_js_version,
             },
         }
         (bc_dir / "package.json").write_text(
             json.dumps(package_json, indent=2) + "\n"
         )
-        logger.info("Wrote blockchain/package.json (ain-js branch: %s)", self.ain_js_branch)
+        logger.info("Wrote blockchain/package.json (ain-js: %s)", self.ain_js_version)
 
     def _build_blockchain_config(self) -> dict:
         """Build the blockchain config.json with topic map, depth map, etc."""
