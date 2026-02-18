@@ -13,6 +13,8 @@ export default function WalletInfo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [passkeyAddress, setPasskeyAddress] = useState<string | null>(null);
+  const [faucetLoading, setFaucetLoading] = useState(false);
+  const [faucetMsg, setFaucetMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWallet();
@@ -37,8 +39,8 @@ export default function WalletInfo() {
     try {
       const res = await fetch('/api/ain/whoami');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setWallet(data);
+      const json = await res.json();
+      setWallet(json.ok ? json.data : { error: json.error });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
@@ -83,11 +85,50 @@ export default function WalletInfo() {
           </div>
 
           <div className="bg-gray-800 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">AIN Balance</p>
-            <p className="text-sm text-white font-mono">
-              {wallet.balance !== undefined ? String(wallet.balance) : 'N/A'}
-              <span className="text-gray-500 ml-1">AIN</span>
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 mb-1">AIN Balance</p>
+                <p className="text-sm text-white font-mono">
+                  {wallet.balance !== undefined && wallet.balance !== null ? String(wallet.balance) : '0'}
+                  <span className="text-gray-500 ml-1">AIN</span>
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!wallet?.address) return;
+                  setFaucetLoading(true);
+                  setFaucetMsg(null);
+                  try {
+                    const res = await fetch('/api/ain/faucet', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ address: wallet.address }),
+                    });
+                    const json = await res.json();
+                    if (json.ok) {
+                      setFaucetMsg(`+${json.data.amount} AIN sent!`);
+                      fetchWallet();
+                    } else {
+                      setFaucetMsg(`Failed: ${json.error}`);
+                    }
+                  } catch (err: unknown) {
+                    const message = err instanceof Error ? err.message : 'Unknown error';
+                    setFaucetMsg(`Error: ${message}`);
+                  } finally {
+                    setFaucetLoading(false);
+                  }
+                }}
+                disabled={faucetLoading || !wallet?.address}
+                className="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-xs font-medium rounded-lg transition-colors"
+              >
+                {faucetLoading ? 'Sending...' : 'Faucet (+1000)'}
+              </button>
+            </div>
+            {faucetMsg && (
+              <p className={`text-xs mt-2 ${faucetMsg.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                {faucetMsg}
+              </p>
+            )}
           </div>
 
           {passkeyAddress && (

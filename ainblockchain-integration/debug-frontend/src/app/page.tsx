@@ -12,6 +12,10 @@ import ExplorationViewer from '@/components/ExplorationViewer';
 import FrontierMapViz from '@/components/FrontierMapViz';
 import FrontierView from '@/components/FrontierView';
 import AccessPanel from '@/components/AccessPanel';
+import CoursePublishForm from '@/components/CoursePublishForm';
+import CourseBrowser from '@/components/CourseBrowser';
+import LearnerProgress from '@/components/LearnerProgress';
+import KnowledgeGraph from '@/components/KnowledgeGraph';
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -59,6 +63,22 @@ export default function DashboardPage() {
 
           <SectionCollapsible title="Access (x402)" defaultOpen={false}>
             <AccessPanel />
+          </SectionCollapsible>
+
+          <SectionCollapsible title="Publish (x402 Gated)" defaultOpen={false}>
+            <CoursePublishForm />
+          </SectionCollapsible>
+
+          <SectionCollapsible title="Browse & Purchase" defaultOpen={false}>
+            <CourseBrowser />
+          </SectionCollapsible>
+
+          <SectionCollapsible title="Knowledge Graph" defaultOpen={false}>
+            <KnowledgeGraph />
+          </SectionCollapsible>
+
+          <SectionCollapsible title="Learner Progress" defaultOpen={false}>
+            <LearnerProgress />
           </SectionCollapsible>
         </>
       )}

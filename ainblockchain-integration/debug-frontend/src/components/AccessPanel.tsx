@@ -7,7 +7,7 @@ export default function AccessPanel() {
   const [topicPath, setTopicPath] = useState('');
   const [entryId, setEntryId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
@@ -41,7 +41,7 @@ export default function AccessPanel() {
 
     const data = result as Record<string, unknown>;
     const hasContent = data.content !== undefined;
-    const paymentStatus = data.paymentStatus || data.payment_status;
+    const paymentStatus = String(data.paymentStatus || data.payment_status || '');
 
     return (
       <div className="mt-4 space-y-3">

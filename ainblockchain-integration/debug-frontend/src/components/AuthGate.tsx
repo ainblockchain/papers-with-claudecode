@@ -61,7 +61,7 @@ export default function AuthGate() {
   function bufferToBase64url(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     let str = '';
-    for (const b of bytes) {
+    for (let i = 0; i < bytes.length; i++) { const b = bytes[i];
       str += String.fromCharCode(b);
     }
     return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

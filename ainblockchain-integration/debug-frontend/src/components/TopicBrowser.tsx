@@ -16,7 +16,7 @@ export default function TopicBrowser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<TopicNode | null>(null);
-  const [topicDetail, setTopicDetail] = useState<unknown>(null);
+  const [topicDetail, setTopicDetail] = useState<Record<string, unknown> | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Register form
@@ -24,7 +24,7 @@ export default function TopicBrowser() {
   const [regTitle, setRegTitle] = useState('');
   const [regDescription, setRegDescription] = useState('');
   const [regLoading, setRegLoading] = useState(false);
-  const [regResult, setRegResult] = useState<unknown>(null);
+  const [regResult, setRegResult] = useState<Record<string, unknown> | null>(null);
   const [regError, setRegError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,8 +37,11 @@ export default function TopicBrowser() {
     try {
       const res = await fetch('/api/topics');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setTopics(Array.isArray(data) ? data : data.topics || []);
+      const json = await res.json();
+      const list = json.ok ? json.data : json.data?.topics || [];
+      setTopics(Array.isArray(list) ? list.map((t: string | TopicNode) =>
+        typeof t === 'string' ? { name: t, path: t } : t
+      ) : []);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
@@ -77,7 +80,7 @@ export default function TopicBrowser() {
     setRegError(null);
     setRegResult(null);
     try {
-      const res = await fetch('/api/topics', {
+      const res = await fetch('/api/topics/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

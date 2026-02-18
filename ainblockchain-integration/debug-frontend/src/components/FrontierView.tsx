@@ -37,8 +37,16 @@ export default function FrontierView() {
         `/api/topics/frontier?topicPath=${encodeURIComponent(topicPath.trim())}`
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setFrontier(data);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'API error');
+      const d = json.data;
+      // Normalize: explorers may be string[] instead of object[]
+      if (d.explorers && Array.isArray(d.explorers)) {
+        d.explorers = d.explorers.map((e: any) =>
+          typeof e === 'string' ? { address: e } : e
+        );
+      }
+      setFrontier(d);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       setError(message);
