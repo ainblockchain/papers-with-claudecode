@@ -10,7 +10,7 @@ export default function ExploreForm() {
   const [depth, setDepth] = useState<number>(1);
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<unknown>(null);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {

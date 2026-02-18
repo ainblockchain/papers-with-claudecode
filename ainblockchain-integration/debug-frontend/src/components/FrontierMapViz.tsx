@@ -29,8 +29,10 @@ export default function FrontierMapViz() {
       const url = `/api/frontier-map?${params.toString()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const items = Array.isArray(data) ? data : data.topics || data.stats || [];
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'API error');
+      const raw = json.data;
+      const items = Array.isArray(raw) ? raw : raw?.topics || raw?.stats || [];
       setStats(items);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';

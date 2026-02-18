@@ -42,8 +42,35 @@ export default function ExplorationViewer() {
 
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const items = Array.isArray(data) ? data : data.explorations || data.results || [];
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || 'API error');
+      const raw = json.data;
+
+      // Convert from object-keyed format to array
+      let items: Exploration[] = [];
+      if (Array.isArray(raw)) {
+        items = raw;
+      } else if (raw && typeof raw === 'object') {
+        if (mode === 'by-user') {
+          // by-user: { "topic|key": { entryId: {...}, ... }, ... }
+          for (const [topicKey, entries] of Object.entries(raw)) {
+            if (entries && typeof entries === 'object') {
+              for (const [, entry] of Object.entries(entries as Record<string, any>)) {
+                if (entry && typeof entry === 'object') {
+                  items.push({ ...entry, topicPath: entry.topic_path || topicKey.replace(/\|/g, '/') });
+                }
+              }
+            }
+          }
+        } else {
+          // by-topic: { entryId: {...}, ... }
+          for (const [, entry] of Object.entries(raw)) {
+            if (entry && typeof entry === 'object') {
+              items.push(entry as Exploration);
+            }
+          }
+        }
+      }
       setExplorations(items);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
@@ -151,7 +178,11 @@ export default function ExplorationViewer() {
                 <p className="text-gray-500 text-xs mb-2 line-clamp-3">{exp.content}</p>
               )}
               <div className="flex flex-wrap gap-2 mt-2">
-                {exp.tags?.map((tag, i) => (
+                {exp.tags && (
+                  Array.isArray(exp.tags)
+                    ? exp.tags
+                    : Object.keys(exp.tags)
+                ).map((tag, i) => (
                   <span
                     key={i}
                     className="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded"
