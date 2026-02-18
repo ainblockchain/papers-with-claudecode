@@ -1,24 +1,30 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { Github } from 'lucide-react';
 import { ClaudeMark } from '@/components/shared/ClaudeMark';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { isRealAuth } from '@/lib/auth-mode';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
 
   const handleGitHubLogin = () => {
-    // 🔌 ADAPTER — Replace with real GitHub OAuth flow
-    login({
-      id: 'mock-user',
-      username: 'developer',
-      avatarUrl: '',
-      email: 'dev@example.com',
-    });
-    router.push('/explore');
+    if (isRealAuth) {
+      signIn('github', { redirectTo: '/explore' });
+    } else {
+      // 🔌 ADAPTER — Mock login for development
+      login({
+        id: 'mock-user',
+        username: 'developer',
+        avatarUrl: '',
+        email: 'dev@example.com',
+      });
+      router.push('/explore');
+    }
   };
 
   return (
