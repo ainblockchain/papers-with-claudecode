@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+import re
 from pathlib import Path
 
 from analyzer.base import BaseRepoAnalyzer
 from analyzer.models import (
     CommitInfo,
+    ComponentInfo,
+    DocumentationInfo,
     RepoType,
     UniversalRepoAnalysis,
 )
@@ -40,8 +43,14 @@ class GenericAnalyzer(BaseRepoAnalyzer):
         """Run generic analysis - basic commit and structure info."""
         logger.info("Starting generic analysis of %s", self.repo_path)
 
+        components = self.scan_components()
+        logger.info("Found %d components", len(components))
+
         commits = self.scan_commits()
         logger.info("Found %d commits", len(commits))
+
+        documentation = self.scan_documentation()
+        logger.info("Found %d documentation files", len(documentation))
 
         structure = self.scan_structure()
         logger.info("Analyzed repository structure")
@@ -49,9 +58,9 @@ class GenericAnalyzer(BaseRepoAnalyzer):
         return UniversalRepoAnalysis(
             repo_type=self.get_repo_type(),
             repo_path=str(self.repo_path),
-            components=[],
+            components=components,
             commits=commits,
-            documentation=[],
+            documentation=documentation,
             structure=structure,
             dependencies={},
             extensions={},
@@ -128,3 +137,197 @@ class GenericAnalyzer(BaseRepoAnalyzer):
             logger.warning(f"Error scanning structure: {e}")
 
         return structure
+
+    def scan_components(self) -> list[ComponentInfo]:
+        """
+        Scan repository for code components (classes and functions).
+
+        Focuses on Python files but can be extended for other languages.
+        """
+        components = []
+
+        try:
+            # Scan Python files for classes and functions
+            python_files = list(self.repo_path.rglob("*.py"))
+
+            # Limit to avoid scanning too many files
+            max_files = 100
+            if len(python_files) > max_files:
+                logger.info(f"Found {len(python_files)} Python files, limiting to {max_files}")
+                python_files = python_files[:max_files]
+
+            for py_file in python_files:
+                # Skip hidden directories and common ignore patterns
+                if any(part.startswith(".") for part in py_file.parts):
+                    continue
+                if any(part in ["__pycache__", "venv", "env", "node_modules"] for part in py_file.parts):
+                    continue
+
+                relative_path = str(py_file.relative_to(self.repo_path))
+
+                # Extract classes
+                classes = self._extract_class_names(py_file)
+                for class_name in classes:
+                    components.append(
+                        ComponentInfo(
+                            name=class_name,
+                            path=relative_path,
+                            type="class",
+                            metadata={},
+                        )
+                    )
+
+                # Extract top-level functions
+                functions = self._extract_function_names(py_file)
+                for func_name in functions:
+                    components.append(
+                        ComponentInfo(
+                            name=func_name,
+                            path=relative_path,
+                            type="function",
+                            metadata={},
+                        )
+                    )
+
+        except Exception as e:
+            logger.warning(f"Error scanning components: {e}")
+
+        return components
+
+    def scan_documentation(self) -> list[DocumentationInfo]:
+        """
+        Scan repository for documentation files.
+
+        Looks for README files and docs directory.
+        """
+        documentation = []
+
+        try:
+            # 1. Look for README files in root
+            readme_patterns = ["README.md", "README.rst", "README.txt", "README"]
+            for pattern in readme_patterns:
+                readme_path = self.repo_path / pattern
+                if readme_path.exists():
+                    try:
+                        content = readme_path.read_text(errors="replace")
+                        summary = self._extract_doc_summary(content)
+                        documentation.append(
+                            DocumentationInfo(
+                                path=pattern,
+                                title="README",
+                                summary=summary,
+                                category="guide",
+                                metadata={"length": len(content)},
+                            )
+                        )
+                        break  # Only add one README
+                    except Exception as e:
+                        logger.debug(f"Could not read {readme_path}: {e}")
+
+            # 2. Look for docs directory
+            docs_dirs = ["docs", "documentation", "doc"]
+            for docs_dir_name in docs_dirs:
+                docs_dir = self.repo_path / docs_dir_name
+                if docs_dir.exists() and docs_dir.is_dir():
+                    # Scan markdown files in docs
+                    md_files = list(docs_dir.rglob("*.md"))
+
+                    # Limit to avoid too many files
+                    max_docs = 20
+                    if len(md_files) > max_docs:
+                        logger.info(f"Found {len(md_files)} doc files, limiting to {max_docs}")
+                        md_files = sorted(md_files)[:max_docs]
+
+                    for doc_file in md_files:
+                        try:
+                            content = doc_file.read_text(errors="replace")
+                            summary = self._extract_doc_summary(content)
+                            relative_path = str(doc_file.relative_to(self.repo_path))
+
+                            # Determine category from path
+                            category = "guide"
+                            if "api" in relative_path.lower():
+                                category = "api"
+                            elif "tutorial" in relative_path.lower():
+                                category = "tutorial"
+
+                            documentation.append(
+                                DocumentationInfo(
+                                    path=relative_path,
+                                    title=doc_file.stem,
+                                    summary=summary,
+                                    category=category,
+                                    metadata={"length": len(content)},
+                                )
+                            )
+                        except Exception as e:
+                            logger.debug(f"Could not read doc {doc_file}: {e}")
+
+                    break  # Only scan first matching docs directory
+
+        except Exception as e:
+            logger.warning(f"Error scanning documentation: {e}")
+
+        return documentation
+
+    # Helper methods
+
+    def _extract_class_names(self, filepath: Path) -> list[str]:
+        """Extract class names from a Python file."""
+        classes = []
+        try:
+            content = filepath.read_text(errors="replace")
+            for match in re.finditer(r"^class\s+(\w+)\s*[\(:]", content, re.MULTILINE):
+                classes.append(match.group(1))
+        except Exception as e:
+            logger.debug(f"Could not read {filepath}: {e}")
+        return classes
+
+    def _extract_function_names(self, filepath: Path) -> list[str]:
+        """Extract top-level function names from a Python file."""
+        functions = []
+        try:
+            content = filepath.read_text(errors="replace")
+            # Match top-level functions (no indentation before 'def')
+            for match in re.finditer(r"^def\s+(\w+)\s*\(", content, re.MULTILINE):
+                func_name = match.group(1)
+                # Skip private functions (starting with _)
+                if not func_name.startswith("_"):
+                    functions.append(func_name)
+        except Exception as e:
+            logger.debug(f"Could not read {filepath}: {e}")
+        return functions
+
+    def _extract_doc_summary(self, content: str) -> str:
+        """
+        Extract the first meaningful paragraph from a markdown doc.
+
+        Skips headers, frontmatter, and extracts the first substantial paragraph.
+        """
+        lines = content.split("\n")
+        in_content = False
+        summary_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+
+            # Skip frontmatter, comments, and code blocks
+            if stripped.startswith("<!--") or stripped.startswith("---") or stripped.startswith("```"):
+                continue
+
+            # Skip headers but mark that we're in content
+            if stripped.startswith("#"):
+                if in_content and summary_lines:
+                    break  # Hit next section after getting content
+                in_content = True
+                continue
+
+            # Collect content
+            if in_content and stripped:
+                summary_lines.append(stripped)
+                if len(" ".join(summary_lines)) > 500:
+                    break
+            elif in_content and not stripped and summary_lines:
+                break  # End of first paragraph
+
+        return " ".join(summary_lines)[:500]
