@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, LayoutDashboard, Map, Upload, Github, Menu, X } from 'lucide-react';
+import { signOut as nextAuthSignOut } from 'next-auth/react';
+import { Compass, LayoutDashboard, Map, Upload, Github, Menu, X, LogOut } from 'lucide-react';
 import { ClaudeMark } from '@/components/shared/ClaudeMark';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUIStore } from '@/stores/useUIStore';
+import { isRealAuth } from '@/lib/auth-mode';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -18,8 +20,16 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const { isMobileMenuOpen, setMobileMenuOpen } = useUIStore();
+
+  const handleSignOut = () => {
+    if (isRealAuth) {
+      nextAuthSignOut({ redirectTo: '/login' });
+    } else {
+      logout();
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-white">
@@ -56,10 +66,21 @@ export function Header() {
         <div className="hidden md:flex items-center gap-2">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-[#FF9D00] flex items-center justify-center text-white text-sm font-medium">
-                {user.username[0].toUpperCase()}
-              </div>
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.username} className="h-8 w-8 rounded-full" />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-[#FF9D00] flex items-center justify-center text-white text-sm font-medium">
+                  {user.username[0].toUpperCase()}
+                </div>
+              )}
               <span className="text-sm font-medium">{user.username}</span>
+              <button
+                onClick={handleSignOut}
+                className="p-1.5 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent/50 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           ) : (
             <Link href="/login">

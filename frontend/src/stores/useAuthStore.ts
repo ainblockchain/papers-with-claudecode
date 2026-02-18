@@ -16,16 +16,11 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// 🔌 ADAPTER — Mock auth for development. Replace with real GitHub OAuth session.
+// 🔌 ADAPTER — Auth state populated by AuthProvider (mock or real GitHub OAuth).
 export const useAuthStore = create<AuthState>((set) => ({
-  user: {
-    id: 'mock-user',
-    username: 'developer',
-    avatarUrl: '',
-    email: 'dev@example.com',
-  },
-  isAuthenticated: true,
-  isLoading: false,
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
   login: (user) => set({ user, isAuthenticated: true }),
   logout: () => set({ user: null, isAuthenticated: false }),
   setLoading: (isLoading) => set({ isLoading }),
