@@ -2,6 +2,6 @@
   "name": "blockchain-helper",
   "private": true,
   "dependencies": {
-    "@ainblockchain/ain-js": "github:ainblockchain/ain-js#feat/knowledge-module"
+    "@ainblockchain/ain-js": "^1.14.0"
   }
 }

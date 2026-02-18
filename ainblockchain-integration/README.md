@@ -15,13 +15,13 @@ Generated courses use the [AIN blockchain](https://ainetwork.ai/) Knowledge modu
 
 The course repo contains **no helper scripts** — the tutor (Claude Code) calls ain-js directly via inline `node -e` commands. The blockchain directory has two files:
 
-**`blockchain/package.json`** — installs ain-js from a git branch:
+**`blockchain/package.json`** — installs ain-js from npm:
 ```json
 {
   "name": "blockchain-helper",
   "private": true,
   "dependencies": {
-    "@ainblockchain/ain-js": "github:ainblockchain/ain-js#feat/knowledge-module"
+    "@ainblockchain/ain-js": "^1.14.0"
   }
 }
 ```
@@ -143,7 +143,7 @@ example-course/
 - Node.js >= 16
 - AIN blockchain node (local or testnet)
 
-ain-js is installed automatically from `github:ainblockchain/ain-js#feat/knowledge-module` via the generated `blockchain/package.json`.
+ain-js is installed automatically from npm (`@ainblockchain/ain-js@^1.14.0`) via the generated `blockchain/package.json`.
 
 ## Enabling blockchain in kg-extractor
 
