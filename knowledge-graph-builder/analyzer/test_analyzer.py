@@ -36,9 +36,9 @@ def main():
         help="Path or URL to the git repository (default: current project)"
     )
     parser.add_argument(
-        "--fast-mode",
+        "--detail-mode",
         action="store_true",
-        help="Enable fast mode (limited commit scan)"
+        help="Enable detail mode (fetch full commit history)"
     )
     parser.add_argument(
         "--keep-clone",
@@ -76,18 +76,32 @@ def main():
             GitRepo.clone_from(repo_path, str(clone_dir), depth=1)
             logger.info("✅ Clone completed")
 
+            # Fetch commit history based on mode
+            git_repo = GitRepo(clone_dir)
+            if args.detail_mode:
+                logger.info("Detail mode: Fetching full commit history...")
+                try:
+                    git_repo.git.fetch("--unshallow")
+                    logger.info("✅ Full commit history fetched")
+                except Exception as e:
+                    logger.warning(f"Could not unshallow clone: {e}")
+            else:
+                # Default: fetch same number of commits as Phase1 (MAX_COMMIT_SCAN = 5000)
+                max_commits = 5000
+                logger.info(f"Fetching commit history (last {max_commits} commits)...")
+                try:
+                    git_repo.git.fetch("--deepen", str(max_commits))
+                    logger.info("✅ Commit history fetched")
+                except Exception as e:
+                    logger.warning(f"Could not deepen clone: {e}")
+
             repo_path = str(clone_dir)
         else:
             logger.info(f"Local repository: {repo_path}")
 
-        # Prepare config
-        config = {}
-        if args.fast_mode:
-            config["use_fast_mode"] = True
-
         # Test 1: Auto-detection
         logger.info("\nTest 1: Auto-detection")
-        analyzer = RepoAnalyzer(repo_path, config=config if config else None)
+        analyzer = RepoAnalyzer(repo_path)
         logger.info(f"Detected type: {analyzer.repo_type}")
 
         # Run analysis
