@@ -55,12 +55,12 @@ export class CogitoNode {
     this.address = this.ain.wallet.addAndSetDefaultAccount(this.config.ainPrivateKey);
     console.log(`[Cogito] AIN address: ${this.address}`);
 
-    // 2. Init Base chain modules
+    // 2. Init Base chain modules (same key — AIN and Base are both EVM-compatible)
     try {
-      this.identity = new AgentIdentity(this.config.baseRpcUrl, this.config.basePrivateKey);
-      this.baseWallet = new BaseWallet(this.config.baseRpcUrl, this.config.basePrivateKey);
+      this.identity = new AgentIdentity(this.config.baseRpcUrl, this.config.ainPrivateKey);
+      this.baseWallet = new BaseWallet(this.config.baseRpcUrl, this.config.ainPrivateKey);
       this.peerClient = new PeerClient(this.identity);
-      console.log(`[Cogito] Base address: ${this.baseWallet.getAddress()}`);
+      console.log(`[Cogito] Base address: ${this.baseWallet.getAddress()} (same key as AIN)`);
     } catch (err: any) {
       console.log(`[Cogito] Base chain init skipped: ${err.message}`);
     }
