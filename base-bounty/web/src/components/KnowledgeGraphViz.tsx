@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-interface GraphNode {
+interface SimNode {
   id: string;
   title: string;
   topic_path: string;
@@ -13,22 +13,29 @@ interface GraphNode {
   vy: number;
 }
 
-interface GraphEdge {
+interface InputNode {
+  id: string;
+  title: string;
+  topic_path: string;
+  depth: number;
+}
+
+interface InputEdge {
   source: string;
   target: string;
   type: string;
 }
 
 interface Props {
-  nodes: Record<string, any>;
-  edges: Record<string, Record<string, any>>;
+  nodes: InputNode[];
+  edges: InputEdge[];
 }
 
 const DEPTH_COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
 export default function KnowledgeGraphViz({ nodes, edges }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [dimensions] = useState({ width: 800, height: 600 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -37,10 +44,9 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
     const ctx = canvas.getContext('2d')!;
     if (!ctx) return;
 
-    // Parse nodes
-    const graphNodes: GraphNode[] = Object.entries(nodes).map(([id, data]: [string, any]) => ({
-      id,
-      title: data.title || id,
+    const graphNodes: SimNode[] = nodes.map((data) => ({
+      id: data.id,
+      title: data.title || data.id,
       topic_path: data.topic_path || '',
       depth: data.depth || 1,
       x: Math.random() * dimensions.width,
@@ -49,23 +55,9 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
       vy: 0,
     }));
 
-    // Parse edges
-    const graphEdges: GraphEdge[] = [];
-    for (const [sourceId, targets] of Object.entries(edges)) {
-      for (const [targetId, edgeData] of Object.entries(targets as Record<string, any>)) {
-        graphEdges.push({
-          source: sourceId,
-          target: targetId,
-          type: edgeData?.type || 'related',
-        });
-      }
-    }
-
     const nodeMap = new Map(graphNodes.map(n => [n.id, n]));
 
-    // Simple force-directed layout
     function simulate() {
-      // Repulsion between all nodes
       for (let i = 0; i < graphNodes.length; i++) {
         for (let j = i + 1; j < graphNodes.length; j++) {
           const a = graphNodes[i];
@@ -81,8 +73,7 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
         }
       }
 
-      // Attraction along edges
-      for (const edge of graphEdges) {
+      for (const edge of edges) {
         const a = nodeMap.get(edge.source);
         const b = nodeMap.get(edge.target);
         if (!a || !b) continue;
@@ -96,13 +87,11 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
         b.vy += (dy / dist) * force;
       }
 
-      // Center gravity
       for (const node of graphNodes) {
         node.vx += (dimensions.width / 2 - node.x) * 0.001;
         node.vy += (dimensions.height / 2 - node.y) * 0.001;
       }
 
-      // Apply velocity with damping
       for (const node of graphNodes) {
         node.vx *= 0.9;
         node.vy *= 0.9;
@@ -117,10 +106,9 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
       ctx.fillStyle = '#0F172A';
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-      // Draw edges
       ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)';
       ctx.lineWidth = 1;
-      for (const edge of graphEdges) {
+      for (const edge of edges) {
         const a = nodeMap.get(edge.source);
         const b = nodeMap.get(edge.target);
         if (!a || !b) continue;
@@ -130,7 +118,6 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
         ctx.stroke();
       }
 
-      // Draw nodes
       for (const node of graphNodes) {
         const color = DEPTH_COLORS[(node.depth - 1) % DEPTH_COLORS.length];
         const radius = 4 + node.depth * 2;
@@ -140,7 +127,6 @@ export default function KnowledgeGraphViz({ nodes, edges }: Props) {
         ctx.fillStyle = color;
         ctx.fill();
 
-        // Label
         ctx.fillStyle = '#E2E8F0';
         ctx.font = '10px monospace';
         ctx.textAlign = 'center';

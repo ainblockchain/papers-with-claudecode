@@ -1,4 +1,4 @@
-import Ain from '@ainblockchain/ain-js';
+import Ain from './ain-import.js';
 import { AgentConfig } from './config.js';
 import { ThinkResult, Strategy } from './types.js';
 import { startX402Server } from './server/x402-server.js';
@@ -42,7 +42,9 @@ export class CogitoNode {
 
   constructor(config: AgentConfig) {
     this.config = config;
-    this.ain = new Ain(config.ainProviderUrl, config.ainWsUrl);
+    this.ain = config.ainWsUrl
+      ? new Ain(config.ainProviderUrl, config.ainWsUrl)
+      : new Ain(config.ainProviderUrl);
     this.revenue = new RevenueTracker();
   }
 
