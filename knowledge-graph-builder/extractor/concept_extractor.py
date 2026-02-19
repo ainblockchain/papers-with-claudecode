@@ -30,7 +30,8 @@ For each concept, provide:
 - description: 1-2 sentence description
 - key_ideas: list of 2-4 key ideas
 - code_refs: list of relevant file:class references from the repo
-- paper_ref: the seminal paper if applicable, e.g. "Vaswani et al., 2017 — Attention Is All You Need"
+- paper_ref: the seminal paper (REQUIRED for every concept; use "" only if truly no \
+paper exists), e.g. "Vaswani et al., 2017 — Attention Is All You Need"
 
 For each relationship (edge), provide:
 - source: concept id
@@ -38,11 +39,19 @@ For each relationship (edge), provide:
 - relationship: one of {relationships}
 - description: brief description of the relationship
 
+Edge direction rules (IMPORTANT — get the direction right):
+- component_of: child → parent  (e.g. attention_mechanism → transformer_architecture)
+- optimizes: technique → target  (e.g. flash_attention → attention_mechanism)
+- builds_on / evolves_to: derived → base  (e.g. gpt → transformer_architecture)
+- variant_of: variant → original  (e.g. bert → transformer_architecture)
+- requires: dependent → dependency  (e.g. fine_tuning → pre_trained_model)
+
 Focus on:
 1. Core architectural concepts (key abstractions, patterns, data flows)
 2. Main components and their roles
-3. Key techniques and algorithms implemented
-4. Training / optimization innovations (if applicable)
+3. Key techniques and algorithms implemented — include concrete model instances \
+(e.g. BERT, GPT, T5, LoRA) as well as foundational abstractions
+4. Training / optimization innovations
 5. Prerequisite chains (what must you understand before what)
 
 Return ONLY valid JSON with keys "nodes" and "edges". No other text.\
@@ -70,8 +79,9 @@ Here is the analysis of the repository:
 {docs_text}
 
 Extract a comprehensive knowledge graph of concepts and their relationships. \
-Include foundational concepts through frontier/advanced concepts. \
-Ensure proper prerequisite chains.
+Include both foundational abstractions AND concrete model instances / named techniques \
+(e.g. BERT, GPT, T5, LoRA, AdamW) that are present or referenced in the repo. \
+Ensure proper prerequisite chains. Every node MUST have a paper_ref where one exists.
 
 Return ONLY valid JSON with keys "nodes" and "edges".\
 """
@@ -155,8 +165,12 @@ class ConceptExtractor:
         continuation_prompt = (
             f"The following concepts were already extracted from the "
             f"{analysis.repo_type.value} repository: {ids_str}.\n"
-            "Extract any ADDITIONAL concepts not yet in that list, focusing on "
-            "components and techniques not covered above.\n"
+            "Extract any ADDITIONAL concepts not yet in that list. Focus on:\n"
+            "1. Concrete model instances and named algorithms not yet covered "
+            "(e.g. BERT, GPT, T5, LoRA, AdamW, RoPE, Flash Attention)\n"
+            "2. Components and techniques not covered above\n"
+            "IMPORTANT: Every node MUST include paper_ref "
+            "(use \"\" only if truly no paper exists).\n"
             "Return ONLY valid JSON with keys 'nodes' and 'edges'."
         )
         text, finish_reason = chat_completion(
@@ -175,8 +189,17 @@ class ConceptExtractor:
             if node.get("id") not in seen_ids:
                 merged_nodes.append(node)
                 seen_ids.add(node["id"])
-        # Edges: simple concatenation — _build_graph already validates both endpoints exist.
-        merged_edges = base.get("edges", []) + extra.get("edges", [])
+        # Edges: deduplicate by (source, target, relationship) to prevent Pass 2 duplicates.
+        seen_edges = {
+            (e["source"], e["target"], e.get("relationship", ""))
+            for e in base.get("edges", [])
+        }
+        merged_edges = list(base.get("edges", []))
+        for edge in extra.get("edges", []):
+            key = (edge["source"], edge["target"], edge.get("relationship", ""))
+            if key not in seen_edges:
+                merged_edges.append(edge)
+                seen_edges.add(key)
         logger.info(
             "Merged graphs: %d nodes total (%d new from Pass 2)",
             len(merged_nodes),
@@ -189,11 +212,28 @@ class ConceptExtractor:
     # ------------------------------------------------------------------
 
     def _select_components(self, analysis: UniversalRepoAnalysis) -> tuple[str, int, int]:
-        """Return components text, sorted by architectural richness (inheritance first)."""
-        items = sorted(
-            analysis.components,
-            key=lambda c: (0 if c.metadata.get("bases") else 1, c.name),
-        )
+        """Return components text, balancing base classes and concrete model instances.
+
+        Sorting priority:
+          0 — concrete model classes (has inheritance AND name suggests a real model/config)
+          1 — other classes with inheritance (base classes)
+          2 — leaf classes without inheritance
+        """
+        _MODEL_SUFFIXES = ("Model", "ForSequenceClassification", "ForCausalLM",
+                           "ForMaskedLM", "ForTokenClassification", "Config",
+                           "Tokenizer", "ForQuestionAnswering", "PreTrainedModel")
+
+        def _sort_key(c):
+            has_bases = bool(c.metadata.get("bases"))
+            is_model = any(c.name.endswith(sfx) or c.name.startswith(sfx)
+                           for sfx in _MODEL_SUFFIXES)
+            if has_bases and is_model:
+                return (0, c.name)
+            if has_bases:
+                return (1, c.name)
+            return (2, c.name)
+
+        items = sorted(analysis.components, key=_sort_key)
         lines: list[str] = []
         budget = _SECTION_BUDGET
         for c in items:
