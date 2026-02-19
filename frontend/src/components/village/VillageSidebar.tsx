@@ -2,7 +2,8 @@
 
 import { useVillageStore } from '@/stores/useVillageStore';
 import { useSocialStore } from '@/stores/useSocialStore';
-import { Trophy, Users, MapPin } from 'lucide-react';
+import { Trophy, Users, MapPin, Network } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { FRIEND_COLORS } from '@/constants/game';
 
@@ -41,7 +42,7 @@ export function VillageSidebar() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-[#111827] truncate">{friend.username}</p>
                   <p className="text-[10px] text-[#6B7280] truncate">
-                    {friend.currentScene === 'dungeon'
+                    {friend.currentScene === 'course'
                       ? `Stage ${friend.currentStage || '?'}`
                       : 'In village'}
                   </p>
@@ -88,6 +89,18 @@ export function VillageSidebar() {
           ))}
         </div>
       </div>
+
+      {/* Community Link */}
+      <Link
+        href="/community"
+        className="flex items-center gap-2 p-2 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 transition-colors"
+      >
+        <Network className="h-4 w-4 text-purple-400" />
+        <div>
+          <p className="text-xs font-medium text-purple-300">Community</p>
+          <p className="text-[10px] text-gray-500">Knowledge Graph & Frontier</p>
+        </div>
+      </Link>
 
       {/* Mini Map */}
       <div>
