@@ -48,3 +48,6 @@ analysis.json/
 *.json
 *.json/
 !.env.example
+
+# Test results
+scaffolder/results/
