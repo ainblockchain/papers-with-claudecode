@@ -1,4 +1,4 @@
-import Ain from '@ainblockchain/ain-js';
+import Ain from './ain-import.js';
 
 export class AlignmentEngine {
   private ain: Ain;
@@ -28,7 +28,8 @@ export class AlignmentEngine {
         },
       };
 
-      await this.ain.em.connect(this.ain.eventHandlerUrl || 'ws://localhost:5100');
+      const wsUrl = (this.ain as any).eventHandlerUrl || process.env.AIN_WS_URL || 'ws://localhost:5100';
+      await this.ain.em.connect(wsUrl);
 
       this.ain.em.subscribe(
         'exploration_watcher',

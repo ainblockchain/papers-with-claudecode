@@ -1,6 +1,5 @@
 import express from 'express';
-import { ethers } from 'ethers';
-import Ain from '@ainblockchain/ain-js';
+import Ain from '../ain-import.js';
 import { AgentConfig } from '../config.js';
 import { createKnowledgeRouter } from './routes/knowledge.js';
 import { createCourseRouter } from './routes/course.js';
@@ -17,39 +16,35 @@ export function createX402Server({ ain, config, baseAddress, getStatus }: X402Se
   app.use(express.json());
 
   // -------------------------------------------------------------------------
-  // x402 payment middleware setup
-  // In production, this uses @x402/express paymentMiddleware to gate routes.
-  // The middleware intercepts requests and requires x402 payment before
-  // forwarding to the actual handler.
+  // x402 payment middleware setup (v2.3+)
+  // Routes config defines which paths are payment-gated and at what price.
+  // If @x402/express is unavailable or setup fails, routes run ungated.
   // -------------------------------------------------------------------------
-  let paymentMiddleware: any = null;
+  let x402Enabled = false;
   try {
-    // Dynamic import to handle optional dependency
-    const x402Express = require('@x402/express');
-    paymentMiddleware = x402Express.paymentMiddleware;
-  } catch {
-    console.log('[x402] @x402/express not available, running without payment gating');
-  }
+    const { paymentMiddleware } = require('@x402/express');
+    const { ExactEvmScheme } = require('@x402/evm');
+    const { ethers } = require('ethers');
 
-  // Payment configuration per route
-  const paymentConfig: Record<string, string> = {
-    '/course/unlock-stage': '0.001',
-    '/knowledge/explore': '0.005',
-    '/knowledge/frontier': '0.002',
-    '/knowledge/curate': '0.05',
-    '/knowledge/graph': '0.01',
-  };
+    if (config.basePrivateKey && baseAddress) {
+      const provider = new ethers.JsonRpcProvider(config.baseRpcUrl);
+      const signer = new ethers.Wallet(config.basePrivateKey, provider);
 
-  // Apply payment middleware if available
-  if (paymentMiddleware) {
-    for (const [path, price] of Object.entries(paymentConfig)) {
-      app.use(path, paymentMiddleware({
-        price,
-        currency: 'USDC',
-        facilitatorUrl: config.x402FacilitatorUrl,
-        payTo: baseAddress,
-      }));
+      const routesConfig: Record<string, { price: string; network: string; config: { description: string } }> = {
+        'POST /course/unlock-stage': { price: '$0.001', network: 'base', config: { description: 'Unlock course stage' } },
+        'GET /knowledge/explore/*': { price: '$0.005', network: 'base', config: { description: 'Access explorations' } },
+        'GET /knowledge/frontier/*': { price: '$0.002', network: 'base', config: { description: 'Access frontier map' } },
+        'POST /knowledge/curate': { price: '$0.05', network: 'base', config: { description: 'Curated analysis' } },
+        'GET /knowledge/graph': { price: '$0.01', network: 'base', config: { description: 'Access knowledge graph' } },
+      };
+
+      const scheme = new ExactEvmScheme(signer);
+      app.use(paymentMiddleware(routesConfig, { facilitatorUrl: config.x402FacilitatorUrl, scheme }));
+      x402Enabled = true;
+      console.log('[x402] Payment middleware enabled');
     }
+  } catch (err: any) {
+    console.log(`[x402] Payment gating disabled: ${err.message}`);
   }
 
   // -------------------------------------------------------------------------
@@ -62,7 +57,7 @@ export function createX402Server({ ain, config, baseAddress, getStatus }: X402Se
   app.get('/health', async (_req, res) => {
     const checks: Record<string, boolean> = {
       server: true,
-      x402: !!paymentMiddleware,
+      x402: x402Enabled,
     };
     try {
       await ain.knowledge.listTopics();
@@ -75,12 +70,12 @@ export function createX402Server({ ain, config, baseAddress, getStatus }: X402Se
   });
 
   // -------------------------------------------------------------------------
-  // Knowledge routes (x402 gated)
+  // Knowledge routes (x402 gated when enabled)
   // -------------------------------------------------------------------------
   app.use('/knowledge', createKnowledgeRouter(ain));
 
   // -------------------------------------------------------------------------
-  // Course routes (x402 gated)
+  // Course routes (x402 gated when enabled)
   // -------------------------------------------------------------------------
   app.use('/course', createCourseRouter(ain));
 

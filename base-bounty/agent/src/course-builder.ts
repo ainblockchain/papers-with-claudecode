@@ -1,4 +1,4 @@
-import Ain from '@ainblockchain/ain-js';
+import Ain from './ain-import.js';
 
 interface CourseStage {
   title: string;

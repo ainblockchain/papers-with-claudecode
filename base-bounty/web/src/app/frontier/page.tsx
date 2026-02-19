@@ -2,38 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import FrontierMapViz from '@/components/FrontierMapViz';
-import { getFrontierMap, listTopics } from '@/lib/agent-client';
+import { getAllFrontierEntries } from '@/lib/agent-client';
 
 export default function FrontierPage() {
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      try {
-        // Get all top-level topics and their frontier stats
-        const topics = await listTopics();
-        const allEntries: any[] = [];
-
-        for (const topic of topics) {
-          try {
-            const subEntries = await getFrontierMap(topic);
-            if (Array.isArray(subEntries)) {
-              allEntries.push(...subEntries);
-            }
-          } catch {
-            // Individual topic fetch may fail
-          }
-        }
-
-        setEntries(allEntries);
-      } catch {
-        setEntries([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    getAllFrontierEntries()
+      .then((data) => setEntries((data || []).filter((e: any) => e.stats?.explorer_count > 0)))
+      .catch(() => setEntries([]))
+      .finally(() => setLoading(false));
   }, []);
 
   return (

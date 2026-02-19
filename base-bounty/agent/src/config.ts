@@ -22,7 +22,7 @@ function requireEnv(key: string): string {
 export function loadConfig(): AgentConfig {
   return {
     ainProviderUrl: process.env.AIN_PROVIDER_URL || 'http://localhost:8081',
-    ainWsUrl: process.env.AIN_WS_URL || 'ws://localhost:5100',
+    ainWsUrl: process.env.AIN_WS_URL || '',
     ainPrivateKey: requireEnv('AIN_PRIVATE_KEY'),
     baseRpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
     basePrivateKey: requireEnv('BASE_PRIVATE_KEY'),

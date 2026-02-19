@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import Ain from '@ainblockchain/ain-js';
+import Ain from '../../ain-import.js';
 
 export function createCourseRouter(ain: Ain): Router {
   const router = Router();
