@@ -1,4 +1,5 @@
 import express from 'express';
+import { ethers } from 'ethers';
 import Ain from '@ainblockchain/ain-js';
 import { AgentConfig } from '../config.js';
 import { createKnowledgeRouter } from './routes/knowledge.js';
@@ -7,6 +8,7 @@ import { createCourseRouter } from './routes/course.js';
 export interface X402ServerOptions {
   ain: Ain;
   config: AgentConfig;
+  baseAddress: string;
   getStatus: () => any;
 }
 
@@ -45,7 +47,7 @@ export function createX402Server({ ain, config, getStatus }: X402ServerOptions):
         price,
         currency: 'USDC',
         facilitatorUrl: config.x402FacilitatorUrl,
-        payTo: config.basePrivateKey, // Address derived from key
+        payTo: options.baseAddress,
       }));
     }
   }
