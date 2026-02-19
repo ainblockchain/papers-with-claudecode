@@ -5,7 +5,6 @@ export interface AgentConfig {
   ainWsUrl: string;
   ainPrivateKey: string;
   baseRpcUrl: string;
-  basePrivateKey: string;
   builderCode: string;
   x402FacilitatorUrl: string;
   agentName: string;
@@ -25,7 +24,6 @@ export function loadConfig(): AgentConfig {
     ainWsUrl: process.env.AIN_WS_URL || '',
     ainPrivateKey: requireEnv('AIN_PRIVATE_KEY'),
     baseRpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    basePrivateKey: requireEnv('BASE_PRIVATE_KEY'),
     builderCode: process.env.BUILDER_CODE || 'cogito_node',
     x402FacilitatorUrl: process.env.X402_FACILITATOR_URL || 'https://facilitator.x402.org',
     agentName: process.env.AGENT_NAME || 'cogito-alpha',

@@ -10,7 +10,6 @@ const TEST_CONFIG: AgentConfig = {
   ainWsUrl: 'ws://localhost:5100',
   ainPrivateKey: '0x' + 'a'.repeat(64),
   baseRpcUrl: 'https://mainnet.base.org',
-  basePrivateKey: '0x' + 'b'.repeat(64),
   builderCode: 'test_cogito',
   x402FacilitatorUrl: 'https://facilitator.x402.org',
   agentName: 'e2e-test-node',

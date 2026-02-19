@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import Ain from '@ainblockchain/ain-js';
+import Ain from '../src/ain-import.js';
 import { AgentIdentity } from '../src/base-chain/identity.js';
 import { loadConfig } from '../src/config.js';
 
@@ -18,7 +18,7 @@ async function main() {
 
   // 1. Register ERC-8004 identity on Base
   console.log('1. Registering ERC-8004 identity on Base...');
-  const identity = new AgentIdentity(config.baseRpcUrl, config.basePrivateKey);
+  const identity = new AgentIdentity(config.baseRpcUrl, config.ainPrivateKey);
 
   const isRegistered = await identity.isRegistered();
   if (isRegistered) {

@@ -8,7 +8,6 @@ describe('loadConfig', () => {
     process.env = { ...originalEnv };
     // Remove all config env vars so we start clean
     delete process.env.AIN_PRIVATE_KEY;
-    delete process.env.BASE_PRIVATE_KEY;
     delete process.env.AIN_PROVIDER_URL;
     delete process.env.AIN_WS_URL;
     delete process.env.BASE_RPC_URL;
@@ -25,7 +24,6 @@ describe('loadConfig', () => {
 
   function setRequiredEnv() {
     process.env.AIN_PRIVATE_KEY = '0xtest_ain_private_key';
-    process.env.BASE_PRIVATE_KEY = '0xtest_base_private_key';
   }
 
   it('should load required env vars', () => {
@@ -33,17 +31,10 @@ describe('loadConfig', () => {
     const config = loadConfig();
 
     expect(config.ainPrivateKey).toBe('0xtest_ain_private_key');
-    expect(config.basePrivateKey).toBe('0xtest_base_private_key');
   });
 
   it('should throw when AIN_PRIVATE_KEY is missing', () => {
-    process.env.BASE_PRIVATE_KEY = '0xtest';
     expect(() => loadConfig()).toThrow('Missing required env var: AIN_PRIVATE_KEY');
-  });
-
-  it('should throw when BASE_PRIVATE_KEY is missing', () => {
-    process.env.AIN_PRIVATE_KEY = '0xtest';
-    expect(() => loadConfig()).toThrow('Missing required env var: BASE_PRIVATE_KEY');
   });
 
   it('should use default values for optional env vars', () => {
@@ -51,7 +42,7 @@ describe('loadConfig', () => {
     const config = loadConfig();
 
     expect(config.ainProviderUrl).toBe('http://localhost:8081');
-    expect(config.ainWsUrl).toBe('ws://localhost:5100');
+    expect(config.ainWsUrl).toBe('');
     expect(config.baseRpcUrl).toBe('https://mainnet.base.org');
     expect(config.builderCode).toBe('cogito_node');
     expect(config.x402FacilitatorUrl).toBe('https://facilitator.x402.org');
