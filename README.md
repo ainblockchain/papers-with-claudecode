@@ -25,7 +25,14 @@ This project builds a knowledge graph to link research papers, code repositories
 
 ## Getting Started
 
-Coming soon.
+1. **Set up GitHub OAuth** — See [docs/github-login.md](docs/github-login.md) for full setup instructions
+2. **Run the frontend** — `cd frontend && npm install && npm run dev`
+3. **Generate a course** — `cd knowledge-graph-builder && python3 -m kg_extractor pipeline --repo <repo-url> --output <output-dir>`
+4. **Learn with Claude Code** — `cd <output-dir> && claude`
+
+## Documentation
+
+- [GitHub Login (Passkey Auth)](docs/github-login.md) — GitHub OAuth + P256 passkey wallet for frontend, KG extractor, and Kubernetes CI/CD
 
 ## Contributing
 
