@@ -1,6 +1,6 @@
 # Paper → Course Builder (Claude-Powered)
 
-이 디렉토리에서 `claude`를 실행한 뒤 **arXiv URL 또는 GitHub URL**을 채팅에 입력하면,
+이 디렉토리에서 `claude`를 실행한 뒤 **arXiv URL, GitHub URL 또는 HuggingFace URL**을 채팅에 입력하면,
 Claude Code가 논문/저장소를 읽고 인터랙티브 학습 코스를 자동 생성합니다.
 
 ---
@@ -36,6 +36,8 @@ Contributor: login=johndoe, name=John Doe, avatar_url=https://avatars.githubuser
 - `https://arxiv.org/pdf/<id>` / `https://arxiv.org/pdf/<id>.pdf` — arXiv PDF
 - `http://arxiv.org/...` (동일 처리)
 - `https://github.com/<user>/<repo>` — GitHub 저장소
+- `https://huggingface.co/<org>/<model>` — HuggingFace 모델 페이지
+- `https://huggingface.co/papers/<arxiv-id>` — HuggingFace 논문 페이지 (arXiv로 리다이렉트하여 처리)
 
 ---
 
@@ -61,11 +63,12 @@ URL이 입력되면 아래 5단계를 **사용자 개입 없이 처음부터 끝
 - 중간에 멈추거나 승인을 요청하지 않는다
 - 진행 상황은 단방향 로그로만 출력한다:
   ```
-  [1/5] 논문 읽는 중...
-  [2/5] 개념 추출 중...
-  [3/5] 코스 구성 중...
-  [4/5] 레슨 생성 중...
-  [5/5] 파일 저장 중...
+  [1/6] 논문 읽는 중...
+  [2/6] 개념 추출 중...
+  [3/6] 코스 구성 중...
+  [4/6] 레슨 생성 중...
+  [5/6] 파일 저장 중...
+  [6/6] GitHub에 푸시 중...
   ```
 - 오류가 발생한 경우에만 사용자에게 알리고 중단한다
 
@@ -79,9 +82,10 @@ URL이 입력되면 아래 5단계를 **사용자 개입 없이 처음부터 끝
 - **URL**: 아래 도메인만 허용
   - `https://arxiv.org/` 또는 `http://arxiv.org/` — 논문 링크
   - `https://github.com/` — GitHub 저장소 링크
+  - `https://huggingface.co/` — HuggingFace 모델/논문 페이지
 - 그 외 임의 도메인은 거부:
   ```
-  ⛔ 허용되지 않는 URL입니다. arxiv.org 또는 github.com 링크만 입력 가능합니다.
+  ⛔ 허용되지 않는 URL입니다. arxiv.org, github.com 또는 huggingface.co 링크만 입력 가능합니다.
   ```
 
 ### 허용 출력 경로
@@ -121,6 +125,20 @@ URL이 입력되면 아래 5단계를 **사용자 개입 없이 처음부터 끝
    - **slug = 그 논문 제목으로 생성** ← 같은 논문의 arXiv URL과 동일한 slug 보장
 4. **arXiv 링크 없을 때 (fallback)**:
    - `<repo-name>` → slug 알고리즘 적용
+
+#### HuggingFace URL인 경우 — `https://huggingface.co/<org>/<model>`
+1. `https://huggingface.co/<org>/<model>` 모델 카드 페이지를 WebFetch
+2. **연관 논문 역추적**: 모델 카드 내 `arxiv.org/abs/` 링크 탐색
+3. **arXiv 링크 발견 시 (권장 경로)**:
+   - 해당 arXiv abstract를 fetch해서 논문 제목, 저자, 연도 파악
+   - **slug = 그 논문 제목으로 생성** ← 같은 논문의 arXiv/GitHub URL과 동일한 slug 보장
+4. **arXiv 링크 없을 때 (fallback)**:
+   - URL에서 추출한 `<model>` 이름만 사용 (모델 카드 제목·본문 텍스트 사용 금지)
+   - 예: `https://huggingface.co/openai/gpt-oss-20b` → `<model>` = `gpt-oss-20b` → slug = `gpt-oss-20b`
+
+#### HuggingFace URL인 경우 — `https://huggingface.co/papers/<arxiv-id>`
+- URL에서 `<arxiv-id>`를 추출하여 `https://arxiv.org/abs/<arxiv-id>`로 재구성
+- 이후 **arXiv URL인 경우**와 동일하게 처리
 
 #### slug 생성 알고리즘 (arXiv/GitHub 공통, 결정적으로 고정)
 
@@ -291,11 +309,29 @@ GitHub repo B (같은 논문)        → blip-3-o-a-family-of.../blip-3-o-a-fami
 
   경로: courseGenerator/awesome-papers-with-claude-code/<paper-slug>/<paper-slug>-N/
   개념: <N>개  |  코스: <M>개
+  GitHub: https://github.com/ainblockchain/awesome-papers-with-claude-code
 
 학습하려면:
   cd ./awesome-papers-with-claude-code/<paper-slug>/<paper-slug>-N
   claude
 ```
+
+### Step 6. GitHub push
+
+파일 저장이 완료된 후 `awesome-papers-with-claude-code/` 디렉토리 내에서
+Bash 툴로 아래 명령을 순서대로 실행한다:
+
+```bash
+cd ./awesome-papers-with-claude-code
+git add <paper-slug>/
+git commit -m "feat: add <paper-slug>-N"
+git push origin main
+```
+
+- `<paper-slug>`, `N`은 Step 5에서 결정한 실제 값으로 대체한다
+- push 성공 시 완료 메시지 아래에 `📤 GitHub push 완료` 를 출력한다
+- push 실패(네트워크 오류, 권한 없음 등) 시 오류 메시지만 출력하고 파이프라인은 성공으로 마무리한다
+  (파일은 이미 로컬에 저장돼 있으므로 실패해도 결과물은 유효함)
 
 ---
 
