@@ -142,7 +142,16 @@ import Ain from '@ainblockchain/ain-js';
 const ain = new Ain('http://localhost:8081', 'ws://localhost:5100');
 ain.wallet.addAndSetDefaultAccount(PRIVATE_KEY);
 
-// Contribute to the global knowledge graph
+// LLM inference through the node (vLLM running alongside)
+await ain.llm.chat([{ role: 'user', content: 'Explain attention mechanisms' }]);
+await ain.llm.complete('What is a transformer?');
+
+// AI-powered exploration (LLM generates content, writes to chain in one call)
+await ain.knowledge.aiExplore('ai/transformers', { depth: 3 });
+await ain.knowledge.aiGenerateCourse('ai/transformers', explorations);
+await ain.knowledge.aiAnalyze('How do attention heads specialize?', nodeIds);
+
+// Manual knowledge graph operations
 await ain.knowledge.explore({ topicPath, title, content, summary, depth, tags });
 await ain.knowledge.publishCourse({ topicPath, title, content, price, gatewayBaseUrl });
 
@@ -177,24 +186,93 @@ The node exposes a public web interface (no auth required) that visualizes the c
 
 ```
 base-bounty/
-├── README.md                 # This file
-├── ARCHITECTURE.md           # Detailed system architecture
-├── agent/                    # Autonomous agent core
-│   ├── cogito.ts             # Main agent loop (think -> record -> align -> earn)
-│   ├── knowledge-engine.ts   # Knowledge graph operations via ain-js
-│   ├── local-llm.ts          # A6000 GPU inference engine
-│   ├── course-builder.ts     # Paper & code -> interactive course transformer
-│   ├── revenue-tracker.ts    # P&L tracking
-│   └── builder-codes.ts      # ERC-8021 integration
-├── server/                   # x402 payment server
-│   ├── routes/               # Knowledge subset endpoints (x402 gated)
-│   └── middleware/            # x402 payment middleware
-├── web/                      # Public collective intelligence view
-│   ├── app/                  # Pages
-│   └── components/           # UI components
-└── scripts/                  # Deployment & operations
-    ├── deploy.ts             # Base mainnet deployment
-    └── register.ts           # ERC-8004 + Builder Code registration
+├── README.md
+├── agent/                           # Cogito Node agent
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example
+│   ├── scripts/
+│   │   └── register.ts             # One-time ERC-8004 + knowledge app setup
+│   └── src/
+│       ├── index.ts                 # Entry point
+│       ├── config.ts                # Env var loader
+│       ├── types.ts                 # Core types
+│       ├── cogito.ts                # Main orchestrator (think → align → earn → sustain)
+│       ├── alignment.ts             # Event-driven peer cross-referencing
+│       ├── course-builder.ts        # Auto course generation from explorations
+│       ├── peer-client.ts           # Agent-to-agent x402 knowledge trading
+│       ├── revenue-tracker.ts       # Income/cost tracking with sustainability ratio
+│       ├── server/
+│       │   ├── x402-server.ts       # Express + @x402/express payment middleware
+│       │   └── routes/
+│       │       ├── knowledge.ts     # /explore, /frontier, /graph, /curate
+│       │       └── course.ts        # /unlock-stage
+│       └── base-chain/
+│           ├── identity.ts          # ERC-8004 agent identity on Base
+│           ├── builder-codes.ts     # ERC-8021 with author attribution
+│           └── wallet.ts            # Base USDC/ETH wallet
+├── web/                             # Collective intelligence UI (Next.js)
+│   ├── package.json
+│   ├── .env.example
+│   └── src/
+│       ├── app/
+│       │   ├── page.tsx             # Overview: stats, recent explorations
+│       │   ├── graph/page.tsx       # Interactive knowledge graph
+│       │   ├── frontier/page.tsx    # Frontier map visualization
+│       │   ├── economics/page.tsx   # Node financial health
+│       │   └── transactions/page.tsx # Tx log with builder code attribution
+│       ├── components/
+│       │   ├── KnowledgeGraphViz.tsx # Force-directed graph canvas
+│       │   ├── FrontierMapViz.tsx    # Depth/explorer bar charts
+│       │   ├── NetworkOverview.tsx   # ERC-8004 node cards
+│       │   ├── NodeEconomics.tsx     # Balance/revenue gauges
+│       │   └── TransactionLog.tsx    # Scrollable tx table
+│       └── lib/
+│           ├── agent-client.ts      # HTTP client to agent + AIN node
+│           └── base-client.ts       # Read-only ethers.js for Base chain
+```
+
+Changes to upstream repos:
+- **ain-blockchain** (`feat/knowledge-module`): `docker-compose.yml`, `db/llm-engine.js`, `json_rpc/llm.js`, config edits
+- **ain-js** (`bump/v1.14.0`): `src/llm/` module, AI methods on knowledge module, `ain.llm` wiring
+
+## Quick Start
+
+### Prerequisites
+- NVIDIA GPU with 48GB+ VRAM (A6000) for vLLM
+- Docker with NVIDIA Container Toolkit
+- Node.js 18+
+
+### 1. Start the AIN blockchain stack
+```bash
+cd /path/to/ain-blockchain
+docker-compose up -d
+# Starts: vLLM (Qwen3-32B-AWQ) + Neo4j + AIN Node
+```
+
+### 2. Register the agent
+```bash
+cd base-bounty/agent
+cp .env.example .env
+# Edit .env: set AIN_PRIVATE_KEY, BASE_PRIVATE_KEY
+npm install
+npm run register
+```
+
+### 3. Run the agent
+```bash
+npm start
+# Autonomous loop + x402 server on port 3402
+# Status: http://localhost:3402/status
+```
+
+### 4. View the dashboard
+```bash
+cd base-bounty/web
+cp .env.example .env.local
+npm install
+npm run dev
+# Open http://localhost:3000
 ```
 
 ## Philosophy
