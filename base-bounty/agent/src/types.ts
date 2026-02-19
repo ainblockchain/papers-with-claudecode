@@ -5,6 +5,7 @@ export interface ThinkResult {
   entryId: string;
   title: string;
   depth: number;
+  paperRef?: string;
 }
 
 export type Strategy = 'explore' | 'align' | 'earn' | 'sustain';

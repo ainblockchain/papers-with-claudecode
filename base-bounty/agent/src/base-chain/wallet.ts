@@ -39,15 +39,18 @@ export class BaseWallet {
 
   /**
    * Send a transaction with ERC-8021 builder code attribution.
+   *
+   * Builder codes are appended as an ERC-8021 suffix to the transaction calldata.
+   * If the transaction has no data field (e.g., a simple ETH transfer), the suffix
+   * becomes the entire data field (prefixed with 0x).
    */
   async sendTransaction(
     tx: ethers.TransactionRequest,
     authors?: AuthorAttribution[]
   ): Promise<ethers.TransactionResponse> {
     // Tag transaction data with builder codes
-    if (tx.data) {
-      tx.data = tagTransaction(tx.data.toString(), authors);
-    }
+    const existingData = tx.data ? tx.data.toString() : '0x';
+    tx.data = tagTransaction(existingData, authors);
     return this.signer.sendTransaction(tx);
   }
 

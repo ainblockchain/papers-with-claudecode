@@ -8,13 +8,17 @@ import { CourseBuilder } from './course-builder.js';
 import { PeerClient } from './peer-client.js';
 import { AgentIdentity } from './base-chain/identity.js';
 import { BaseWallet } from './base-chain/wallet.js';
+import { fetchPapers, fetchRecentPapers, buildPaperContext, suggestSubtopic, Paper } from './paper-source.js';
 
 const SEED_TOPICS = [
   { path: 'ai/transformers', title: 'Transformer Architecture', description: 'Neural network architecture based on self-attention mechanism' },
   { path: 'ai/reinforcement-learning', title: 'Reinforcement Learning', description: 'Learning paradigm through environment interaction and rewards' },
+  { path: 'ai/state-space-models', title: 'State-Space Models', description: 'Sequence modeling via continuous-time state spaces (S4, Mamba)' },
+  { path: 'ai/multimodal', title: 'Multimodal AI', description: 'Models that reason across vision, language, and other modalities' },
+  { path: 'ai/alignment', title: 'AI Alignment', description: 'Methods for aligning AI systems with human values (RLHF, DPO)' },
+  { path: 'ai/agents', title: 'AI Agents', description: 'Autonomous LLM-based agents with tool use and planning' },
   { path: 'crypto/consensus', title: 'Consensus Mechanisms', description: 'Distributed agreement protocols for blockchain networks' },
-  { path: 'crypto/defi', title: 'Decentralized Finance', description: 'Financial instruments built on blockchain technology' },
-  { path: 'math/category-theory', title: 'Category Theory', description: 'Abstract mathematical theory of structures and relationships' },
+  { path: 'crypto/zk', title: 'Zero-Knowledge Proofs', description: 'Cryptographic proofs that reveal nothing beyond statement validity' },
 ];
 
 // Auto-generate course after this many explorations on a topic
@@ -39,6 +43,8 @@ export class CogitoNode {
   // Track explorations per topic for course auto-generation
   private explorationCounts: Map<string, number> = new Map();
   private recentExplorations: ThinkResult[] = [];
+  // Track explored papers to avoid re-exploring the same ones
+  private exploredPaperIds: Set<string> = new Set();
 
   constructor(config: AgentConfig) {
     this.config = config;
@@ -161,48 +167,139 @@ export class CogitoNode {
   }
 
   // ---------------------------------------------------------------------------
-  // Think: explore a topic via LLM
+  // Think: explore research papers and write structured knowledge
   // ---------------------------------------------------------------------------
 
   async think(): Promise<ThinkResult | null> {
-    console.log('[Cogito] Thinking...');
+    // 1. Pick target topic
+    const targetTopic = await this.pickTopic();
+    console.log(`[Cogito] Target topic: ${targetTopic}`);
 
-    const frontierMap = await this.ain.knowledge.getFrontierMap();
-    let targetTopic: string;
+    // 2. Fetch papers from arXiv for this topic
+    let papers: Paper[] = [];
+    try {
+      // Alternate between seminal papers and recent ones
+      const useRecent = this.thinkCount % 3 === 2;
+      papers = useRecent
+        ? await fetchRecentPapers(targetTopic, 5)
+        : await fetchPapers(targetTopic, 5);
 
-    if (frontierMap.length === 0) {
-      const seed = SEED_TOPICS[Math.floor(Math.random() * SEED_TOPICS.length)];
-      targetTopic = seed.path;
-    } else {
-      // Pick the topic with fewest explorations
-      const sorted = [...frontierMap].sort((a, b) => a.stats.explorer_count - b.stats.explorer_count);
-      targetTopic = sorted[0].topic;
+      // Filter out papers we've already explored
+      papers = papers.filter(p => !this.exploredPaperIds.has(p.arxivId));
+
+      if (papers.length > 0) {
+        console.log(`[Cogito] Found ${papers.length} papers for "${targetTopic}":`);
+        for (const p of papers.slice(0, 3)) {
+          console.log(`  - ${p.title} (${p.authors[0]} et al., ${p.published.slice(0, 4)})`);
+        }
+      } else {
+        console.log(`[Cogito] No new papers found for "${targetTopic}", exploring with general context`);
+      }
+    } catch (err: any) {
+      console.log(`[Cogito] arXiv fetch failed: ${err.message} — exploring without papers`);
     }
 
-    console.log(`[Cogito] Exploring topic: ${targetTopic}`);
+    // 3. Build rich context from papers
+    const context = papers.length > 0
+      ? buildPaperContext(papers, targetTopic)
+      : `Explore the topic "${targetTopic}" in depth. Identify key concepts, seminal papers, and open research questions. Structure your exploration as a knowledge contribution.`;
 
-    const result = await this.ain.knowledge.aiExplore(targetTopic, {
-      context: `Exploration by ${this.config.agentName}, cycle #${this.thinkCount + 1}`,
+    // 4. Determine subtopic if papers suggest a more specific area
+    let exploreTopic = targetTopic;
+    if (papers.length > 0) {
+      const suggested = suggestSubtopic(papers[0], targetTopic);
+      if (suggested !== targetTopic) {
+        exploreTopic = suggested;
+        // Register the subtopic if new
+        try {
+          const info = await this.ain.knowledge.getTopicInfo(exploreTopic);
+          if (!info) {
+            await this.ain.knowledge.registerTopic(exploreTopic, {
+              title: papers[0].title.split(':')[0].trim(),
+              description: `Papers-driven exploration of ${suggested.split('/').pop()}`,
+            });
+            console.log(`[Cogito] Registered subtopic: ${exploreTopic}`);
+          }
+        } catch {
+          // Topic may already exist or registration may fail
+        }
+      }
+    }
+
+    // 5. Call aiExplore with paper-grounded context
+    console.log(`[Cogito] Exploring: ${exploreTopic}`);
+    const result = await this.ain.knowledge.aiExplore(exploreTopic, {
+      context,
+      depth: this.pickDepth(exploreTopic),
     });
 
-    console.log(`[Cogito] Exploration written: entryId=${result.entryId}`);
+    // 6. Mark papers as explored
+    for (const p of papers) {
+      this.exploredPaperIds.add(p.arxivId);
+    }
 
-    // Track for course auto-generation
-    const count = (this.explorationCounts.get(targetTopic) || 0) + 1;
-    this.explorationCounts.set(targetTopic, count);
+    // 7. Track for course auto-generation
+    const count = (this.explorationCounts.get(exploreTopic) || 0) + 1;
+    this.explorationCounts.set(exploreTopic, count);
+
+    const paperRef = papers.length > 0
+      ? `${papers[0].authors[0]} et al., ${papers[0].published.slice(0, 4)} — ${papers[0].title}`
+      : undefined;
 
     const thinkResult: ThinkResult = {
-      topicPath: targetTopic,
+      topicPath: exploreTopic,
       entryId: result.entryId,
-      title: `Exploration of ${targetTopic}`,
-      depth: 1,
+      title: papers.length > 0 ? papers[0].title : `Exploration of ${exploreTopic}`,
+      depth: this.pickDepth(exploreTopic),
+      paperRef,
     };
+
+    console.log(`[Cogito] Exploration written: ${result.entryId} — "${thinkResult.title}"`);
 
     // Keep last 10 explorations for status endpoint
     this.recentExplorations.unshift(thinkResult);
     if (this.recentExplorations.length > 10) this.recentExplorations.pop();
 
     return thinkResult;
+  }
+
+  /**
+   * Pick the best topic to explore next.
+   * Prefers topics with gaps in the frontier, falls back to seed topics.
+   */
+  private async pickTopic(): Promise<string> {
+    const frontierMap = await this.ain.knowledge.getFrontierMap();
+
+    if (frontierMap.length === 0) {
+      // No frontier yet — pick a seed topic we haven't explored much
+      const leastExplored = SEED_TOPICS
+        .map(s => ({ ...s, count: this.explorationCounts.get(s.path) || 0 }))
+        .sort((a, b) => a.count - b.count);
+      return leastExplored[0].path;
+    }
+
+    // Pick the topic with fewest explorers (most room for contribution)
+    const sorted = [...frontierMap].sort((a, b) => {
+      // Prefer topics with lower depth (less explored)
+      const depthDiff = a.stats.avg_depth - b.stats.avg_depth;
+      if (Math.abs(depthDiff) > 0.5) return depthDiff;
+      // Then by explorer count (fewer = more opportunity)
+      return a.stats.explorer_count - b.stats.explorer_count;
+    });
+
+    return sorted[0].topic;
+  }
+
+  /**
+   * Pick exploration depth based on how much we've already explored a topic.
+   */
+  private pickDepth(topicPath: string): 1 | 2 | 3 | 4 | 5 {
+    const count = this.explorationCounts.get(topicPath) || 0;
+    if (count === 0) return 1;
+    if (count < 3) return 2;
+    if (count < 6) return 3;
+    if (count < 10) return 4;
+    return 5;
   }
 
   // ---------------------------------------------------------------------------

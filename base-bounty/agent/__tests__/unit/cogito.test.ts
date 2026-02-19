@@ -1,3 +1,11 @@
+// Mock paper-source before importing cogito (which imports it)
+jest.mock('../../src/paper-source', () => ({
+  fetchPapers: jest.fn().mockResolvedValue([]),
+  fetchRecentPapers: jest.fn().mockResolvedValue([]),
+  buildPaperContext: jest.fn().mockReturnValue(''),
+  suggestSubtopic: jest.fn().mockImplementation((_paper: any, parent: string) => parent),
+}));
+
 import { CogitoNode } from '../../src/cogito.js';
 import { AgentConfig } from '../../src/config.js';
 import Ain from '@ainblockchain/ain-js';

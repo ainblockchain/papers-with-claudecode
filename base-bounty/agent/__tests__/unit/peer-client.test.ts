@@ -3,13 +3,10 @@ import { PeerClient } from '../../src/peer-client.js';
 
 function createMockIdentity(overrides: any = {}) {
   return {
-    getAllRegisteredNodes: jest.fn().mockResolvedValue([]),
     getAddress: jest.fn().mockReturnValue('0xMyAddress'),
-    getIdentity: jest.fn().mockResolvedValue({
-      name: 'peer-node',
-      serviceEndpoint: 'http://peer:3402',
-      metadata: '{}',
-    }),
+    isRegistered: jest.fn().mockResolvedValue(false),
+    register: jest.fn().mockResolvedValue({ txHash: '0xreg', agentId: 1n }),
+    getTokenMetadata: jest.fn().mockResolvedValue({ name: 'peer-node' }),
     ...overrides,
   } as any;
 }
@@ -39,56 +36,9 @@ describe('PeerClient', () => {
   // ---------------------------------------------------------------------------
 
   describe('discoverPeers', () => {
-    it('should return empty array when no registered nodes', async () => {
-      identity.getAllRegisteredNodes.mockResolvedValue([]);
-
+    it('should return empty array (event-based discovery not yet implemented)', async () => {
       const peers = await client.discoverPeers();
       expect(peers).toEqual([]);
-    });
-
-    it('should exclude own address from peers', async () => {
-      identity.getAllRegisteredNodes.mockResolvedValue(['0xMyAddress', '0xPeer1']);
-      identity.getIdentity.mockResolvedValue({
-        name: 'peer1',
-        serviceEndpoint: 'http://peer1:3402',
-        metadata: '{}',
-      });
-
-      const peers = await client.discoverPeers();
-
-      expect(peers).toHaveLength(1);
-      expect(peers[0].address).toBe('0xPeer1');
-      expect(peers[0].name).toBe('peer1');
-      expect(peers[0].endpoint).toBe('http://peer1:3402');
-    });
-
-    it('should handle case-insensitive address comparison', async () => {
-      identity.getAddress.mockReturnValue('0xMyAddress');
-      identity.getAllRegisteredNodes.mockResolvedValue(['0xmyaddress', '0xPeer1']);
-      identity.getIdentity.mockResolvedValue({
-        name: 'peer1',
-        serviceEndpoint: 'http://peer1:3402',
-        metadata: '{}',
-      });
-
-      const peers = await client.discoverPeers();
-      expect(peers).toHaveLength(1);
-    });
-
-    it('should skip peers with invalid identity data', async () => {
-      identity.getAllRegisteredNodes.mockResolvedValue(['0xPeer1', '0xPeer2']);
-      identity.getIdentity
-        .mockRejectedValueOnce(new Error('Invalid data'))
-        .mockResolvedValueOnce({
-          name: 'peer2',
-          serviceEndpoint: 'http://peer2:3402',
-          metadata: '{}',
-        });
-
-      const peers = await client.discoverPeers();
-
-      expect(peers).toHaveLength(1);
-      expect(peers[0].address).toBe('0xPeer2');
     });
   });
 

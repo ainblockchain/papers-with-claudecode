@@ -2,6 +2,13 @@
  * End-to-end test for the Cogito Node agent lifecycle.
  * Mocks are provided via jest.config.js moduleNameMapper.
  */
+jest.mock('../../src/paper-source', () => ({
+  fetchPapers: jest.fn().mockResolvedValue([]),
+  fetchRecentPapers: jest.fn().mockResolvedValue([]),
+  buildPaperContext: jest.fn().mockReturnValue(''),
+  suggestSubtopic: jest.fn().mockImplementation((_paper: any, parent: string) => parent),
+}));
+
 import { CogitoNode } from '../../src/cogito.js';
 import { AgentConfig } from '../../src/config.js';
 
