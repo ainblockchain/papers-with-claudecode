@@ -1,6 +1,13 @@
 import Ain from '@ainblockchain/ain-js';
-import { AgentConfig, loadConfig } from './config.js';
+import { AgentConfig } from './config.js';
 import { ThinkResult, Strategy } from './types.js';
+import { startX402Server } from './server/x402-server.js';
+import { AlignmentEngine } from './alignment.js';
+import { RevenueTracker } from './revenue-tracker.js';
+import { CourseBuilder } from './course-builder.js';
+import { PeerClient } from './peer-client.js';
+import { AgentIdentity } from './base-chain/identity.js';
+import { BaseWallet } from './base-chain/wallet.js';
 
 const SEED_TOPICS = [
   { path: 'ai/transformers', title: 'Transformer Architecture', description: 'Neural network architecture based on self-attention mechanism' },
@@ -10,6 +17,9 @@ const SEED_TOPICS = [
   { path: 'math/category-theory', title: 'Category Theory', description: 'Abstract mathematical theory of structures and relationships' },
 ];
 
+// Auto-generate course after this many explorations on a topic
+const COURSE_THRESHOLD = 3;
+
 export class CogitoNode {
   private config: AgentConfig;
   private ain: Ain;
@@ -18,19 +28,46 @@ export class CogitoNode {
   private running = false;
   private thinkCount = 0;
 
+  // Sub-modules
+  private alignment: AlignmentEngine | null = null;
+  private revenue: RevenueTracker;
+  private courseBuilder: CourseBuilder | null = null;
+  private peerClient: PeerClient | null = null;
+  private identity: AgentIdentity | null = null;
+  private baseWallet: BaseWallet | null = null;
+
+  // Track explorations per topic for course auto-generation
+  private explorationCounts: Map<string, number> = new Map();
+  private recentExplorations: ThinkResult[] = [];
+
   constructor(config: AgentConfig) {
     this.config = config;
     this.ain = new Ain(config.ainProviderUrl, config.ainWsUrl);
+    this.revenue = new RevenueTracker();
   }
 
   async start(): Promise<void> {
     console.log(`[Cogito] Starting ${this.config.agentName}...`);
 
-    // Init wallet
+    // 1. Init AIN wallet
     this.address = this.ain.wallet.addAndSetDefaultAccount(this.config.ainPrivateKey);
-    console.log(`[Cogito] Address: ${this.address}`);
+    console.log(`[Cogito] AIN address: ${this.address}`);
 
-    // Setup knowledge app (idempotent)
+    // 2. Init Base chain modules
+    try {
+      this.identity = new AgentIdentity(this.config.baseRpcUrl, this.config.basePrivateKey);
+      this.baseWallet = new BaseWallet(this.config.baseRpcUrl, this.config.basePrivateKey);
+      this.peerClient = new PeerClient(this.identity);
+      console.log(`[Cogito] Base address: ${this.baseWallet.getAddress()}`);
+    } catch (err: any) {
+      console.log(`[Cogito] Base chain init skipped: ${err.message}`);
+    }
+
+    // 3. Init sub-modules that depend on ain
+    this.courseBuilder = new CourseBuilder(this.ain);
+    this.alignment = new AlignmentEngine(this.ain, this.address);
+
+    // 4. Setup knowledge app (idempotent)
     try {
       await this.ain.knowledge.setupApp({ address: this.address });
       console.log('[Cogito] Knowledge app setup complete.');
@@ -38,16 +75,33 @@ export class CogitoNode {
       console.log(`[Cogito] Knowledge app setup skipped (may already exist): ${err.message}`);
     }
 
-    // Register seed topics
+    // 5. Register seed topics
     await this.registerSeedTopics();
 
+    // 6. Start x402 server (runs persistently)
+    try {
+      await startX402Server({
+        ain: this.ain,
+        config: this.config,
+        baseAddress: this.baseWallet?.getAddress() || '',
+        getStatus: () => this.getStatus(),
+      });
+    } catch (err: any) {
+      console.error(`[Cogito] x402 server failed to start: ${err.message}`);
+    }
+
+    // 7. Start alignment event listener
+    try {
+      await this.alignment.startListening();
+    } catch (err: any) {
+      console.log(`[Cogito] Alignment listener skipped: ${err.message}`);
+    }
+
+    // 8. Start autonomous loop
     this.running = true;
     console.log(`[Cogito] Autonomous loop starting (interval: ${this.config.thinkIntervalMs}ms)`);
 
-    // Initial think
     await this.runCycle();
-
-    // Start loop
     this.loopTimer = setInterval(() => this.runCycle(), this.config.thinkIntervalMs);
   }
 
@@ -58,7 +112,13 @@ export class CogitoNode {
       clearInterval(this.loopTimer);
       this.loopTimer = null;
     }
+    this.alignment?.stop();
+    this.revenue.prune();
   }
+
+  // ---------------------------------------------------------------------------
+  // Autonomous cycle
+  // ---------------------------------------------------------------------------
 
   private async runCycle(): Promise<void> {
     if (!this.running) return;
@@ -78,7 +138,8 @@ export class CogitoNode {
           await this.sustain();
           break;
         case 'earn':
-          // x402 server runs persistently, nothing to do per-cycle
+          // x402 server runs persistently; per-cycle we try course generation
+          await this.tryCourseGeneration();
           break;
       }
     } catch (err: any) {
@@ -89,60 +150,95 @@ export class CogitoNode {
   }
 
   private pickStrategy(): Strategy {
-    // Simple round-robin weighted strategy
-    const cycle = this.thinkCount % 5;
-    if (cycle < 3) return 'explore'; // 60% explore
-    if (cycle === 3) return 'align';  // 20% align
-    return 'sustain';                  // 20% sustain
+    // Weighted round-robin: explore(60%), align(20%), earn(10%), sustain(10%)
+    const cycle = this.thinkCount % 10;
+    if (cycle < 6) return 'explore';
+    if (cycle < 8) return 'align';
+    if (cycle === 8) return 'earn';
+    return 'sustain';
   }
+
+  // ---------------------------------------------------------------------------
+  // Think: explore a topic via LLM
+  // ---------------------------------------------------------------------------
 
   async think(): Promise<ThinkResult | null> {
     console.log('[Cogito] Thinking...');
 
-    // Read frontier map to pick a topic
     const frontierMap = await this.ain.knowledge.getFrontierMap();
     let targetTopic: string;
 
     if (frontierMap.length === 0) {
-      // Pick a random seed topic
       const seed = SEED_TOPICS[Math.floor(Math.random() * SEED_TOPICS.length)];
       targetTopic = seed.path;
     } else {
-      // Pick the topic with fewest explorations (lowest explorer count)
+      // Pick the topic with fewest explorations
       const sorted = [...frontierMap].sort((a, b) => a.stats.explorer_count - b.stats.explorer_count);
       targetTopic = sorted[0].topic;
     }
 
     console.log(`[Cogito] Exploring topic: ${targetTopic}`);
 
-    // Use AI explore — generates content via LLM and writes to chain
     const result = await this.ain.knowledge.aiExplore(targetTopic, {
       context: `Exploration by ${this.config.agentName}, cycle #${this.thinkCount + 1}`,
     });
 
     console.log(`[Cogito] Exploration written: entryId=${result.entryId}`);
 
-    return {
+    // Track for course auto-generation
+    const count = (this.explorationCounts.get(targetTopic) || 0) + 1;
+    this.explorationCounts.set(targetTopic, count);
+
+    const thinkResult: ThinkResult = {
       topicPath: targetTopic,
       entryId: result.entryId,
       title: `Exploration of ${targetTopic}`,
       depth: 1,
     };
+
+    // Keep last 10 explorations for status endpoint
+    this.recentExplorations.unshift(thinkResult);
+    if (this.recentExplorations.length > 10) this.recentExplorations.pop();
+
+    return thinkResult;
   }
+
+  // ---------------------------------------------------------------------------
+  // Align: cross-reference with peers
+  // ---------------------------------------------------------------------------
 
   async align(): Promise<void> {
     console.log('[Cogito] Aligning with peer explorations...');
 
-    // Get all topics and check for other explorers
+    // Try peer discovery via ERC-8004 registry
+    if (this.peerClient) {
+      try {
+        const peers = await this.peerClient.discoverPeers();
+        if (peers.length > 0) {
+          console.log(`[Cogito] Discovered ${peers.length} peers via ERC-8004`);
+          for (const peer of peers.slice(0, 2)) {
+            try {
+              const status = await this.peerClient.getPeerStatus(peer.endpoint);
+              console.log(`[Cogito] Peer ${peer.name}: ${status.thinkCount || 0} cycles`);
+            } catch {
+              // Peer may be offline
+            }
+          }
+        }
+      } catch (err: any) {
+        console.log(`[Cogito] Peer discovery skipped: ${err.message}`);
+      }
+    }
+
+    // Cross-reference on-chain explorations
     const topics = await this.ain.knowledge.listTopics();
     for (const topic of topics.slice(0, 3)) {
       const explorers = await this.ain.knowledge.getExplorers(topic);
       const peers = explorers.filter(addr => addr !== this.address);
 
       if (peers.length > 0) {
-        console.log(`[Cogito] Found ${peers.length} peers on topic: ${topic}`);
+        console.log(`[Cogito] Found ${peers.length} on-chain peers on topic: ${topic}`);
 
-        // Read peer explorations and cross-reference via LLM
         for (const peer of peers.slice(0, 2)) {
           const peerExplorations = await this.ain.knowledge.getExplorations(peer, topic);
           if (!peerExplorations) continue;
@@ -162,14 +258,80 @@ export class CogitoNode {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Sustain: check financial health
+  // ---------------------------------------------------------------------------
+
   async sustain(): Promise<void> {
     console.log('[Cogito] Checking sustainability...');
-    // In a full implementation, this would check USDC balance on Base
-    // and adjust strategy based on revenue/cost ratio.
-    // For now, just log status.
+
     const topics = await this.ain.knowledge.listTopics();
-    console.log(`[Cogito] Status: ${topics.length} topics, ${this.thinkCount} cycles completed`);
+    const revenueSnapshot = this.revenue.getSnapshot();
+
+    // Check Base USDC balance if wallet is available
+    let usdcBalance = 0;
+    let ethBalance = 0;
+    if (this.baseWallet) {
+      try {
+        usdcBalance = await this.baseWallet.getUSDCBalance();
+        ethBalance = await this.baseWallet.getETHBalance();
+      } catch (err: any) {
+        console.log(`[Cogito] Balance check failed: ${err.message}`);
+      }
+    }
+
+    console.log(`[Cogito] Status: ${topics.length} topics, ${this.thinkCount} cycles`);
+    console.log(`[Cogito] Revenue: income=$${revenueSnapshot.incomeLast24h.toFixed(4)}, cost=$${revenueSnapshot.costLast24h.toFixed(4)}, ratio=${revenueSnapshot.sustainabilityRatio}`);
+    console.log(`[Cogito] Base wallet: ${usdcBalance.toFixed(2)} USDC, ${ethBalance.toFixed(4)} ETH`);
+
+    // Prune old revenue events
+    this.revenue.prune();
   }
+
+  // ---------------------------------------------------------------------------
+  // Earn: auto-generate courses from accumulated explorations
+  // ---------------------------------------------------------------------------
+
+  private async tryCourseGeneration(): Promise<void> {
+    if (!this.courseBuilder) return;
+
+    for (const [topicPath, count] of this.explorationCounts) {
+      if (count >= COURSE_THRESHOLD) {
+        console.log(`[Cogito] Topic "${topicPath}" has ${count} explorations — generating course`);
+
+        try {
+          const stages = await this.courseBuilder.transformToCourse(topicPath);
+          console.log(`[Cogito] Generated ${stages.length} course stages for "${topicPath}"`);
+
+          // Reset count so we don't regenerate every cycle
+          this.explorationCounts.set(topicPath, 0);
+        } catch (err: any) {
+          console.error(`[Cogito] Course generation failed for ${topicPath}: ${err.message}`);
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Status (exposed via x402 /status endpoint)
+  // ---------------------------------------------------------------------------
+
+  getStatus(): any {
+    return {
+      agentName: this.config.agentName,
+      ainAddress: this.address,
+      baseAddress: this.baseWallet?.getAddress() || null,
+      thinkCount: this.thinkCount,
+      running: this.running,
+      explorationCounts: Object.fromEntries(this.explorationCounts),
+      recentExplorations: this.recentExplorations,
+      revenue: this.revenue.getSnapshot(),
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
 
   private async registerSeedTopics(): Promise<void> {
     for (const seed of SEED_TOPICS) {
@@ -188,15 +350,8 @@ export class CogitoNode {
     }
   }
 
-  getAddress(): string {
-    return this.address;
-  }
-
-  getAin(): Ain {
-    return this.ain;
-  }
-
-  getThinkCount(): number {
-    return this.thinkCount;
-  }
+  getAddress(): string { return this.address; }
+  getAin(): Ain { return this.ain; }
+  getThinkCount(): number { return this.thinkCount; }
+  getRevenue(): RevenueTracker { return this.revenue; }
 }

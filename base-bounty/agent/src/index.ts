@@ -15,7 +15,10 @@ async function main() {
   process.on('SIGTERM', shutdown);
 
   await node.start();
-  console.log('[Cogito] Node is running. Press Ctrl+C to stop.');
+  console.log(`[Cogito] Node is running.`);
+  console.log(`[Cogito] x402 server: http://localhost:${config.x402Port}`);
+  console.log(`[Cogito] Status:      http://localhost:${config.x402Port}/status`);
+  console.log('[Cogito] Press Ctrl+C to stop.');
 }
 
 main().catch((err) => {
