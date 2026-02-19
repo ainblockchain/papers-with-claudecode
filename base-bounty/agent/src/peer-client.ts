@@ -52,29 +52,16 @@ export class PeerClient {
 
   /**
    * Discover peer endpoints from the ERC-8004 registry.
+   * Note: The ERC-8004 registry is an ERC-721 contract. Peer discovery
+   * currently requires off-chain indexing or Transfer event scanning,
+   * which is not yet implemented. Returns an empty array for now.
    */
   async discoverPeers(): Promise<Array<{ address: string; name: string; endpoint: string }>> {
-    const addresses = await this.identity.getAllRegisteredNodes();
-    const myAddress = this.identity.getAddress();
-
-    const peers: Array<{ address: string; name: string; endpoint: string }> = [];
-
-    for (const addr of addresses) {
-      if (addr.toLowerCase() === myAddress.toLowerCase()) continue;
-
-      try {
-        const info = await this.identity.getIdentity(addr);
-        peers.push({
-          address: addr,
-          name: info.name,
-          endpoint: info.serviceEndpoint,
-        });
-      } catch {
-        // Skip peers with invalid identity data
-      }
-    }
-
-    return peers;
+    // TODO: Implement peer discovery via Transfer event scanning or subgraph
+    // The ERC-8004 registry does not have an enumeration function.
+    // Options: (1) scan Transfer(0x0, to, tokenId) events, (2) use a subgraph
+    console.log('[Peer] Peer discovery via ERC-8004 event scanning not yet implemented');
+    return [];
   }
 
   /**

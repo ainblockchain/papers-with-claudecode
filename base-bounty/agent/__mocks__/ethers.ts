@@ -12,6 +12,7 @@ function fn(returnValue?: any) {
 }
 
 export const ethers = {
+  ZeroAddress: '0x0000000000000000000000000000000000000000',
   JsonRpcProvider: function() { return {}; },
   Wallet: function(_key: string, _provider?: any) {
     return {
@@ -21,14 +22,17 @@ export const ethers = {
     };
   },
   Contract: function(_addr: string, _abi: any, _signer?: any) {
+    const registerResult = Promise.resolve({ wait: fn(Promise.resolve({ hash: '0xreg', logs: [] })) });
     return {
       balanceOf: fn(Promise.resolve(BigInt(1000000))),
       decimals: fn(Promise.resolve(6)),
-      register: fn(Promise.resolve({ wait: fn(Promise.resolve({ hash: '0xreg' })) })),
-      isRegistered: fn(Promise.resolve(false)),
-      getIdentity: fn(Promise.resolve(['node', 'http://localhost:3402', '{}'])),
-      getAllRegistered: fn(Promise.resolve([])),
+      'register(string)': fn(registerResult),
+      'register()': fn(registerResult),
       transfer: fn(),
+      tokenURI: fn(Promise.resolve('data:application/json;base64,e30=')),
+      interface: {
+        parseLog: () => null,
+      },
     };
   },
   formatUnits: (_val: any, _dec: any) => '1.0',
