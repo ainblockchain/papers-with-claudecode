@@ -1,53 +1,218 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { Github, Fingerprint, Loader2 } from 'lucide-react';
+import { Github, Fingerprint, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
 import { ClaudeMark } from '@/components/shared/ClaudeMark';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { isRealAuth } from '@/lib/auth-mode';
-import { registerPasskey, isPasskeySupported } from '@/lib/ain/passkey';
+import {
+  registerPasskey,
+  authenticatePasskey,
+  isPasskeySupported,
+  loadPasskeyInfo,
+  type PasskeyInfo,
+} from '@/lib/ain/passkey';
 
-export default function LoginPage() {
+/** Step progress indicator (1. GitHub → 2. Passkey) */
+function StepIndicator({ currentStep }: { currentStep: 1 | 2 }) {
+  return (
+    <div className="flex items-center justify-center gap-2 mb-6">
+      <div
+        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+          currentStep === 1
+            ? 'bg-[#24292e] text-white'
+            : 'bg-green-100 text-green-700'
+        }`}
+      >
+        {currentStep > 1 ? <ShieldCheck className="h-3 w-3" /> : <Github className="h-3 w-3" />}
+        1. GitHub
+      </div>
+      <ArrowRight className="h-3 w-3 text-[#9CA3AF]" />
+      <div
+        className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${
+          currentStep === 2
+            ? 'bg-[#24292e] text-white'
+            : 'bg-[#E5E7EB] text-[#6B7280]'
+        }`}
+      >
+        <Fingerprint className="h-3 w-3" />
+        2. Passkey
+      </div>
+    </div>
+  );
+}
+
+/** Passkey step — verify existing or register new */
+function PasskeyStep({
+  user,
+  existingPasskey,
+  onRegister,
+  onVerify,
+  onSkip,
+  processing,
+  error,
+}: {
+  user: { username: string; email: string; avatarUrl: string };
+  existingPasskey: PasskeyInfo | null;
+  onRegister: () => void;
+  onVerify: () => void;
+  onSkip: () => void;
+  processing: boolean;
+  error: string | null;
+}) {
+  const supportsPasskey = typeof window !== 'undefined' && isPasskeySupported();
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <div className="w-full max-w-sm mx-4">
+        <div className="text-center mb-8">
+          <ClaudeMark className="mx-auto" size={48} />
+          <h1 className="mt-4 text-2xl font-bold text-[#111827]">
+            {existingPasskey ? 'Verify your Passkey' : 'Set up your AIN Wallet'}
+          </h1>
+          <p className="mt-2 text-sm text-[#6B7280]">
+            {existingPasskey
+              ? 'Confirm your identity with your registered passkey.'
+              : 'Register a passkey to create your on-chain wallet. No seed phrases needed.'}
+          </p>
+        </div>
+
+        <StepIndicator currentStep={2} />
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-[#E5E7EB]">
+          {/* User info */}
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#E5E7EB]">
+            {user.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.username} className="h-10 w-10 rounded-full" />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-[#FF9D00] flex items-center justify-center text-white text-sm font-bold">
+                {user.username[0]?.toUpperCase() ?? '?'}
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-medium text-[#111827]">{user.username}</p>
+              <p className="text-xs text-[#6B7280]">{user.email}</p>
+            </div>
+          </div>
+
+          {supportsPasskey ? (
+            <>
+              {existingPasskey ? (
+                <Button
+                  onClick={onVerify}
+                  disabled={processing}
+                  className="w-full bg-[#24292e] hover:bg-[#24292e]/90 text-white h-11"
+                >
+                  {processing ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5 mr-2" />
+                  )}
+                  {processing ? 'Verifying...' : 'Verify Passkey'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={onRegister}
+                  disabled={processing}
+                  className="w-full bg-[#24292e] hover:bg-[#24292e]/90 text-white h-11"
+                >
+                  {processing ? (
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                  ) : (
+                    <Fingerprint className="h-5 w-5 mr-2" />
+                  )}
+                  {processing ? 'Registering...' : 'Register Passkey'}
+                </Button>
+              )}
+              {error && <p className="mt-3 text-xs text-center text-red-500">{error}</p>}
+            </>
+          ) : (
+            <p className="text-sm text-center text-[#6B7280]">
+              Your browser does not support passkeys.
+            </p>
+          )}
+
+          <button
+            onClick={onSkip}
+            className="mt-3 w-full text-xs text-center text-[#6B7280] hover:text-[#111827] transition-colors"
+          >
+            Skip for now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
-  const { user, isAuthenticated, passkeyInfo, login, setPasskeyInfo } = useAuthStore();
-  const [registering, setRegistering] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const { user, isAuthenticated, passkeyInfo, isLoading, login, setPasskeyInfo } =
+    useAuthStore();
 
-  // After login + passkey registered → redirect to /explore
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [passkeyDone, setPasskeyDone] = useState(false);
+  const [mockAuthActive, setMockAuthActive] = useState(false);
+
+  const fromOAuth = searchParams.get('from') === 'oauth';
+  const existingPasskey = typeof window !== 'undefined' ? loadPasskeyInfo() : null;
+
+  // ── Redirect logic ──
   useEffect(() => {
-    if (isAuthenticated && passkeyInfo) {
+    if (isLoading) return;
+
+    if (passkeyDone) {
+      router.push('/explore');
+      return;
+    }
+
+    // Already fully authenticated + NOT in a login flow → redirect
+    if (isAuthenticated && passkeyInfo && !fromOAuth && !mockAuthActive) {
       router.push('/explore');
     }
-  }, [isAuthenticated, passkeyInfo, router]);
+  }, [isLoading, isAuthenticated, passkeyInfo, fromOAuth, mockAuthActive, passkeyDone, router]);
 
+  // ── Handlers ──
   const handleGitHubLogin = () => {
     if (isRealAuth) {
-      // Redirect back to /login for passkey registration step
-      signIn('github', { redirectTo: '/login' });
+      signIn('github', { redirectTo: '/login?from=oauth' });
     } else {
-      login({
-        id: 'mock-user',
-        username: 'developer',
-        avatarUrl: '',
-        email: 'dev@example.com',
-      });
+      login({ id: 'mock-user', username: 'developer', avatarUrl: '', email: 'dev@example.com' });
+      setMockAuthActive(true);
     }
   };
 
   const handleRegisterPasskey = async () => {
     if (!user) return;
-    setRegistering(true);
+    setProcessing(true);
     setError(null);
     try {
       const info = await registerPasskey(user.id, user.username || user.email);
       setPasskeyInfo(info);
+      setPasskeyDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Passkey registration failed');
     } finally {
-      setRegistering(false);
+      setProcessing(false);
+    }
+  };
+
+  const handleVerifyPasskey = async () => {
+    if (!existingPasskey) return;
+    setProcessing(true);
+    setError(null);
+    try {
+      const info = await authenticatePasskey(existingPasskey.credentialId);
+      setPasskeyInfo(info);
+      setPasskeyDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Passkey verification failed');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -55,73 +220,47 @@ export default function LoginPage() {
     router.push('/explore');
   };
 
-  // Step 2: Authenticated but no passkey → show passkey registration
-  if (isAuthenticated && user && !passkeyInfo) {
-    const supportsPasskey = typeof window !== 'undefined' && isPasskeySupported();
-
+  // ── Loading ──
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-sm mx-4">
-          <div className="text-center mb-8">
-            <ClaudeMark className="mx-auto" size={48} />
-            <h1 className="mt-4 text-2xl font-bold text-[#111827]">Set up your AIN Wallet</h1>
-            <p className="mt-2 text-sm text-[#6B7280]">
-              Register a passkey to create your on-chain wallet. No seed phrases needed.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-[#E5E7EB]">
-            <div className="flex items-center gap-3 mb-5 pb-4 border-b border-[#E5E7EB]">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.username} className="h-10 w-10 rounded-full" />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-[#FF9D00] flex items-center justify-center text-white text-sm font-bold">
-                  {user.username[0].toUpperCase()}
-                </div>
-              )}
-              <div>
-                <p className="text-sm font-medium text-[#111827]">{user.username}</p>
-                <p className="text-xs text-[#6B7280]">{user.email}</p>
-              </div>
-            </div>
-
-            {supportsPasskey ? (
-              <>
-                <Button
-                  onClick={handleRegisterPasskey}
-                  disabled={registering}
-                  className="w-full bg-[#24292e] hover:bg-[#24292e]/90 text-white h-11"
-                >
-                  {registering ? (
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  ) : (
-                    <Fingerprint className="h-5 w-5 mr-2" />
-                  )}
-                  {registering ? 'Registering...' : 'Register Passkey'}
-                </Button>
-                {error && (
-                  <p className="mt-3 text-xs text-center text-red-500">{error}</p>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-center text-[#6B7280]">
-                Your browser does not support passkeys.
-              </p>
-            )}
-
-            <button
-              onClick={handleSkipPasskey}
-              className="mt-3 w-full text-xs text-center text-[#6B7280] hover:text-[#111827] transition-colors"
-            >
-              Skip for now
-            </button>
-          </div>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-[#6B7280]" />
       </div>
     );
   }
 
-  // Step 1: Not authenticated → show GitHub sign in
+  // ── Step 2: Passkey (authenticated via OAuth or mock) ──
+  const inLoginFlow = fromOAuth || mockAuthActive;
+  if (isAuthenticated && user && inLoginFlow && !passkeyDone) {
+    return (
+      <PasskeyStep
+        user={user}
+        existingPasskey={existingPasskey}
+        onRegister={handleRegisterPasskey}
+        onVerify={handleVerifyPasskey}
+        onSkip={handleSkipPasskey}
+        processing={processing}
+        error={error}
+      />
+    );
+  }
+
+  // ── Step 2 fallback: session active but no passkey yet (direct navigation) ──
+  if (isAuthenticated && user && !passkeyInfo) {
+    return (
+      <PasskeyStep
+        user={user}
+        existingPasskey={existingPasskey}
+        onRegister={handleRegisterPasskey}
+        onVerify={handleVerifyPasskey}
+        onSkip={handleSkipPasskey}
+        processing={processing}
+        error={error}
+      />
+    );
+  }
+
+  // ── Step 1: Not authenticated → GitHub sign-in ──
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <div className="w-full max-w-sm mx-4">
@@ -132,6 +271,9 @@ export default function LoginPage() {
             Learn research papers interactively with AI
           </p>
         </div>
+
+        <StepIndicator currentStep={1} />
+
         <div className="bg-white p-6 rounded-lg shadow-sm border border-[#E5E7EB]">
           <Button
             onClick={handleGitHubLogin}
@@ -146,5 +288,19 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+          <Loader2 className="h-8 w-8 animate-spin text-[#6B7280]" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

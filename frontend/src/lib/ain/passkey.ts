@@ -154,6 +154,39 @@ export async function registerPasskey(
 }
 
 /**
+ * Authenticate with an existing passkey via WebAuthn assertion.
+ * Triggers biometric/PIN verification on the device.
+ * Returns the stored PasskeyInfo on success.
+ */
+export async function authenticatePasskey(credentialId: string): Promise<PasskeyInfo> {
+  const stored = loadPasskeyInfo();
+  if (!stored) throw new Error('No passkey found in storage');
+
+  const challenge = new Uint8Array(32);
+  crypto.getRandomValues(challenge);
+
+  const assertion = (await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials: [
+        {
+          id: base64UrlToBuffer(credentialId),
+          type: 'public-key',
+        },
+      ],
+      userVerification: 'preferred',
+      timeout: 60000,
+    },
+  })) as PublicKeyCredential | null;
+
+  if (!assertion) {
+    throw new Error('Passkey verification was cancelled');
+  }
+
+  return stored;
+}
+
+/**
  * Generate WebAuthn assertion options for signing a challenge.
  */
 export function getAssertionOptions(challenge: Uint8Array, credentialId: string) {
