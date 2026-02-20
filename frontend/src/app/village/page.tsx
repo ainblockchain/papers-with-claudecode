@@ -20,7 +20,6 @@ export default function VillagePage() {
   const { addNotification, setLeaderboard } = useSocialStore();
   const { initializeAccess } = usePurchaseStore();
 
-  // Initialize purchase access statuses for all papers
   useEffect(() => {
     papersAdapter.fetchTrendingPapers('daily').then((papers) => {
       initializeAccess(papers);

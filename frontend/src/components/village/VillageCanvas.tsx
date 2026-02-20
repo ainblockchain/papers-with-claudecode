@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVillageStore } from '@/stores/useVillageStore';
 import { TILE_SIZE, PLAYER_COLOR, FRIEND_COLORS } from '@/constants/game';
 import { useLocationSync } from '@/hooks/useLocationSync';
 import { useVillageMap } from '@/hooks/useVillageMap';
 import { trackEvent } from '@/lib/ain/event-tracker';
+import type { Paper } from '@/types/paper';
 import { renderTileLayer, type Viewport } from '@/lib/tmj/renderer';
 import { usePurchaseStore } from '@/stores/usePurchaseStore';
 import { papersAdapter } from '@/lib/adapters/papers';
@@ -29,8 +30,12 @@ export function VillageCanvas() {
     useVillageStore();
   const { getAccessStatus, setPurchaseModal } = usePurchaseStore();
 
-  // Sync positions with AIN blockchain
-  useLocationSync();
+  // Fetch courses and sync positions with AIN blockchain
+  const [courses, setCourses] = useState<Paper[]>();
+  useEffect(() => {
+    papersAdapter.fetchTrendingPapers('daily').then(setCourses);
+  }, []);
+  useLocationSync(courses);
 
   // Generate village TMJ from course locations using plot grid system
   const { mapData, mapDimensions } = useVillageMap(courseLocations);
@@ -129,15 +134,9 @@ export function VillageCanvas() {
               router.push(`/learn/${paperId}`);
             } else {
               // Not purchased — open purchase modal
-              const paper = papersAdapter.getPaperByIdSync?.(paperId);
-              if (paper) {
-                setPurchaseModal(paperId, paper);
-              } else {
-                // Fallback: fetch async
-                papersAdapter.getPaperById(paperId).then((p) => {
-                  if (p) setPurchaseModal(paperId, p);
-                });
-              }
+              papersAdapter.getPaperById(paperId).then((p) => {
+                if (p) setPurchaseModal(paperId, p);
+              });
             }
           }
           return;
