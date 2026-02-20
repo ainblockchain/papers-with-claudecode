@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, FileText, Play, ShoppingCart } from 'lucide-react';
+import { Star, FileText, Play, ShoppingCart, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Paper } from '@/types/paper';
@@ -25,6 +25,7 @@ export function PaperCard({ paper }: PaperCardProps) {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
@@ -62,32 +63,42 @@ export function PaperCard({ paper }: PaperCardProps) {
           </h3>
         </Link>
         {paper.courseName && (
-          <Badge
-            variant="outline"
-            className="mt-1 w-fit text-[11px] px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-200"
-          >
-            {paper.courseName}
-          </Badge>
+          <p className="mt-1 flex items-center gap-1.5 text-sm text-[#6B7280]">
+            <BookOpen className="h-3.5 w-3.5 text-[#FF9D00] flex-shrink-0" />
+            <span className="font-medium text-[#374151]">{paper.courseName}</span>
+            <span>·</span>
+            <span>{paper.description}</span>
+          </p>
         )}
-        <p className="mt-1.5 text-sm text-[#6B7280] line-clamp-2">{paper.description}</p>
+        {!paper.courseName && (
+          <p className="mt-1.5 text-sm text-[#6B7280] line-clamp-2">{paper.description}</p>
+        )}
         <div className="mt-auto pt-3 flex items-center gap-2 text-sm text-[#6B7280]">
-          <div className="flex items-center gap-1">
-            {paper.authors.slice(0, 3).map((author) => (
-              <div
-                key={author.id}
-                className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-[9px] font-medium text-white"
-                title={author.name}
-              >
-                {author.name[0]}
-              </div>
-            ))}
-            {paper.authors.length > 3 && (
-              <span className="text-xs">+{paper.authors.length - 3}</span>
-            )}
-            <span className="ml-1 text-xs">{paper.authors.length} authors</span>
-          </div>
-          <span className="text-xs">·</span>
-          <span className="text-xs">Published on {formatDate(paper.publishedAt)}</span>
+          {paper.authors.length > 0 && (
+            <div className="flex items-center gap-1">
+              {paper.authors.slice(0, 3).map((author) => (
+                <div
+                  key={author.id}
+                  className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-[9px] font-medium text-white"
+                  title={author.name}
+                >
+                  {author.name[0]}
+                </div>
+              ))}
+              {paper.authors.length > 3 && (
+                <span className="text-xs">+{paper.authors.length - 3}</span>
+              )}
+              <span className="ml-1 text-xs">
+                {paper.authors.map((a) => a.name).join(', ')}
+              </span>
+            </div>
+          )}
+          {paper.publishedAt && (
+            <>
+              {paper.authors.length > 0 && <span className="text-xs">·</span>}
+              <span className="text-xs">{formatDate(paper.publishedAt)}</span>
+            </>
+          )}
         </div>
       </div>
 
@@ -123,12 +134,14 @@ export function PaperCard({ paper }: PaperCardProps) {
             </Button>
           </a>
         )}
-        <a href={paper.arxivUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="w-full text-xs h-8">
-            <FileText className="h-3 w-3 mr-1" />
-            arXiv Page
-          </Button>
-        </a>
+        {paper.arxivUrl && (
+          <a href={paper.arxivUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="w-full text-xs h-8">
+              <FileText className="h-3 w-3 mr-1" />
+              arXiv Page
+            </Button>
+          </a>
+        )}
       </div>
     </article>
   );
