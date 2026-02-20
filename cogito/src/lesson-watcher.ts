@@ -56,7 +56,22 @@ export class LessonWatcher {
     const explorations = await this.ain.getAllExplorations();
     if (!explorations) return;
 
-    let newCount = 0;
+    // On initial scan, collect enriched entry titles to detect un-enriched lessons
+    const enrichedTitles = new Set<string>();
+    if (!this.initialScanDone) {
+      for (const [, entries] of Object.entries(explorations)) {
+        if (!entries || typeof entries !== 'object') continue;
+        for (const [, entry] of Object.entries(entries as Record<string, any>)) {
+          const tags = (entry.tags || '').toLowerCase();
+          if (tags.includes('x402_gated')) {
+            enrichedTitles.add((entry.title || '').toLowerCase());
+          }
+        }
+      }
+    }
+
+    const pendingLessons: Array<{ topicKey: string; entryId: string; entry: any }> = [];
+
     for (const [topicKey, entries] of Object.entries(explorations)) {
       if (!entries || typeof entries !== 'object') continue;
 
@@ -80,14 +95,24 @@ export class LessonWatcher {
           continue;
         }
 
-        // On first scan, mark pre-existing entries as processed without enriching
+        // On first scan, only enrich lessons that have no matching enriched content
         if (!this.initialScanDone) {
+          const titleLower = (entry.title || '').toLowerCase();
+          // Check if any enriched entry contains this lesson's title as a substring
+          const alreadyEnriched = [...enrichedTitles].some(t =>
+            t.includes(titleLower.slice(0, 30)) || titleLower.includes(t.slice(0, 30))
+          );
+          if (alreadyEnriched) {
+            this.processedEntries.add(fullId);
+            continue;
+          }
+          // Queue for enrichment
+          pendingLessons.push({ topicKey, entryId, entry });
           this.processedEntries.add(fullId);
           continue;
         }
 
         // Process this new lesson
-        newCount++;
         console.log(`[Watcher] New lesson found: "${entry.title}" (${fullId})`);
         await this.processLesson(topicKey, entryId, entry);
         this.processedEntries.add(fullId);
@@ -96,9 +121,18 @@ export class LessonWatcher {
 
     if (!this.initialScanDone) {
       this.initialScanDone = true;
-      console.log(`[Watcher] Initial scan complete — ${this.processedEntries.size} existing entries catalogued, watching for new lessons`);
-    } else if (newCount === 0) {
-      // Quiet poll, no new lessons
+      const total = this.processedEntries.size;
+      console.log(`[Watcher] Initial scan: ${total} entries catalogued, ${pendingLessons.length} un-enriched lessons to process`);
+
+      // Process un-enriched lessons sequentially
+      for (const { topicKey, entryId, entry } of pendingLessons) {
+        const fullId = `${topicKey}/${entryId}`;
+        console.log(`[Watcher] Enriching backlog: "${entry.title}" (${fullId})`);
+        await this.processLesson(topicKey, entryId, entry);
+      }
+      if (pendingLessons.length > 0) {
+        console.log(`[Watcher] Backlog complete — ${pendingLessons.length} lessons enriched`);
+      }
     }
   }
 
