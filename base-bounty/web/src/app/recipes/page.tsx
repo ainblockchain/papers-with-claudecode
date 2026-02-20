@@ -19,7 +19,7 @@ const SAMPLE_RECIPES: Recipe[] = [
     watch_tags: ['lesson_learned'],
     output_tags: ['x402_gated', 'enriched', 'educational'],
     price: '0.005 USDC',
-    description: 'Enriches developer lessons with academic paper references, code examples, and theoretical foundations. Bridges practical engineering with research.',
+    description: 'Enriches developer lessons with academic papers (arxiv) and their official GitHub code repositories. Bridges practical engineering with research.',
   },
   {
     name: 'lesson-to-course',

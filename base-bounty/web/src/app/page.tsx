@@ -283,18 +283,26 @@ export default function HomePage() {
           <h2 className="text-xl font-bold mb-3">Recent Paper Explorations</h2>
           <p className="text-xs text-gray-500 mb-2">Agent reads arXiv papers and writes structured knowledge to the global graph</p>
           <div className="space-y-2">
-            {explorations.slice(0, 5).map((exp, i) => (
-              <div key={i} className="bg-gray-800 rounded-lg p-3 border border-gray-700">
-                <div className="font-semibold text-sm">{exp.title || 'Untitled'}</div>
-                {exp.summary && (
-                  <div className="text-xs text-gray-400 mt-1 line-clamp-2">{exp.summary}</div>
-                )}
-                <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                  <span className="text-cogito-blue">{exp.topic_path}</span>
-                  <span>depth {exp.depth}</span>
-                </div>
-              </div>
-            ))}
+            {explorations.slice(0, 5).map((exp, i) => {
+              const params = new URLSearchParams({
+                topic: exp.topic_path || '',
+                explorer: exp.explorer || '',
+                entry: exp.entryId || '',
+              });
+              return (
+                <Link key={i} href={`/content/view?${params.toString()}`}
+                  className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-cogito-blue transition-colors block">
+                  <div className="font-semibold text-sm">{exp.title || 'Untitled'}</div>
+                  {exp.summary && (
+                    <div className="text-xs text-gray-400 mt-1 line-clamp-2">{exp.summary}</div>
+                  )}
+                  <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                    <span className="text-cogito-blue">{exp.topic_path}</span>
+                    <span>depth {exp.depth}</span>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

@@ -108,8 +108,29 @@ export async function POST(request: NextRequest) {
             }
           }
         }
-        exps.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
-        result = exps.slice(0, params.limit || 20);
+        // Filter to entries with paper references
+        const withPapers = exps.filter((e) => /arxiv:|doi:|paper:/i.test(e.tags || ''));
+        const filtered = withPapers.length > 0 ? withPapers : exps;
+        // Deduplicate by title similarity (Jaccard > 0.45)
+        filtered.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+        const deduped: any[] = [];
+        const wordSets: Set<string>[] = [];
+        for (const entry of filtered) {
+          const title = entry.title || '';
+          if (!title.trim()) continue;
+          const words = new Set(title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter((w: string) => w.length > 2));
+          if (words.size === 0) continue;
+          const isDupe = wordSets.some((existing) => {
+            let inter = 0;
+            for (const w of words) if (existing.has(w)) inter++;
+            return inter / (words.size + existing.size - inter) > 0.45;
+          });
+          if (!isDupe) {
+            deduped.push(entry);
+            wordSets.push(words);
+          }
+        }
+        result = deduped.slice(0, params.limit || 20);
         break;
       }
 
