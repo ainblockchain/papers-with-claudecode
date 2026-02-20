@@ -6,6 +6,11 @@ const PUBLIC_PATHS = ["/login", "/api/auth"]
 export default auth((req) => {
   const { pathname } = req.nextUrl
 
+  // Allow landing page
+  if (pathname === "/") {
+    return NextResponse.next()
+  }
+
   // Allow public paths and static assets
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return NextResponse.next()
