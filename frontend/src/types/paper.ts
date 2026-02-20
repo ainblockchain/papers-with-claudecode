@@ -20,6 +20,7 @@ export interface Paper {
   thumbnailUrl: string;
   arxivUrl: string;
   githubUrl?: string;
+  courseRepoUrl?: string;
   githubStars?: number;
   organization?: { name: string; logoUrl: string };
   submittedBy: string;

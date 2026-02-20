@@ -1,5 +1,5 @@
 // Papers 어댑터 — GitHub 레포(awesome-papers-with-claude-code)에서 직접 논문/코스 데이터를 가져옴
-// FE에서 바로 GitHub로 호출 (public repo이므로 인증 불필요, raw.githubusercontent.com은 rate limit 비해당)
+// paper.json이 있으면 해당 메타데이터 우선 사용, 없으면 README 파싱으로 fallback
 import { Paper } from '@/types/paper';
 import { MOCK_PAPERS } from '@/constants/mock-papers';
 
@@ -14,6 +14,19 @@ export interface PapersAdapter {
   getPaperById(id: string): Promise<Paper | null>;
   /** Synchronous lookup (cached data only — returns null if not cached) */
   getPaperByIdSync?(id: string): Paper | null;
+}
+
+// ── paper.json 스키마 ─────────────────────────────
+
+interface PaperJsonData {
+  title?: string;
+  description?: string;
+  arxivId?: string;
+  githubUrl?: string;
+  authors?: { name: string }[];
+  publishedAt?: string;
+  organization?: { name: string };
+  submittedBy?: string;
 }
 
 // ── 파싱 유틸 ──────────────────────────────────
@@ -73,6 +86,56 @@ async function fetchRawFile(path: string): Promise<string | null> {
   }
 }
 
+// ── Paper 빌더 ────────────────────────────────────
+
+/** paper.json(있으면) > README 파싱 > 기본값 우선순위 체인으로 Paper 생성 */
+function buildPaper(
+  paperSlug: string,
+  courseSlug: string,
+  readmeMeta: ReturnType<typeof parseReadme>,
+  stats: { totalConcepts: number; totalLessons: number },
+  paperJson?: PaperJsonData,
+): Paper {
+  const arxivId = paperJson?.arxivId || readmeMeta.arxivId || '';
+  const thumbnailUrl = arxivId
+    ? `https://cdn-thumbnails.huggingface.co/social-thumbnails/papers/${arxivId}.png`
+    : '';
+
+  const courseRepoUrl = `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/main/${paperSlug}/${courseSlug}`;
+
+  const authors = paperJson?.authors?.length
+    ? paperJson.authors.map((a, i) => ({
+        id: `${paperSlug}-${i}`,
+        name: a.name,
+      }))
+    : readmeMeta.authors
+      ? readmeMeta.authors.split(/,\s*(?:and\s+)?/).map((name, i) => ({
+          id: `${paperSlug}-${courseSlug}-${i}`,
+          name: name.replace(/\s+et\s+al\.?/, ' et al.').trim(),
+        }))
+      : [];
+
+  const statsDescription = `${stats.totalConcepts} concepts · ${stats.totalLessons} lessons across ${readmeMeta.totalModules || 1} module${(readmeMeta.totalModules || 1) > 1 ? 's' : ''}`;
+
+  return {
+    id: `${paperSlug}/${courseSlug}`,
+    title: paperJson?.title || readmeMeta.title || slugToName(paperSlug),
+    description: paperJson?.description || statsDescription,
+    authors,
+    publishedAt: paperJson?.publishedAt || (readmeMeta.year ? `${readmeMeta.year}-01-01` : ''),
+    thumbnailUrl,
+    arxivUrl: arxivId ? `https://arxiv.org/abs/${arxivId}` : '',
+    githubUrl: paperJson?.githubUrl || courseRepoUrl,
+    courseRepoUrl,
+    submittedBy: paperJson?.submittedBy || 'community',
+    totalStages: readmeMeta.totalModules || 1,
+    courseName: slugToName(courseSlug),
+    organization: paperJson?.organization
+      ? { name: paperJson.organization.name, logoUrl: '' }
+      : undefined,
+  };
+}
+
 // ── GitHub 데이터 fetching ─────────────────────
 
 async function fetchPapersFromGitHub(): Promise<Paper[]> {
@@ -88,17 +151,39 @@ async function fetchPapersFromGitHub(): Promise<Paper[]> {
 
   const tree = await treeRes.json();
 
-  // 2) 트리에서 <paper-slug>/<course-slug>/README.md 패턴으로 코스 식별
+  // 2) 트리에서 코스 및 paper.json 식별
   const courses: { paperSlug: string; courseSlug: string }[] = [];
+  const paperJsonSlugs = new Set<string>();
 
   for (const item of tree.tree) {
-    const match = item.path.match(/^([^/]+)\/([^/]+)\/README\.md$/);
-    if (match) {
-      courses.push({ paperSlug: match[1], courseSlug: match[2] });
+    const courseMatch = item.path.match(/^([^/]+)\/([^/]+)\/README\.md$/);
+    if (courseMatch) {
+      courses.push({ paperSlug: courseMatch[1], courseSlug: courseMatch[2] });
+    }
+    const paperJsonMatch = item.path.match(/^([^/]+)\/paper\.json$/);
+    if (paperJsonMatch) {
+      paperJsonSlugs.add(paperJsonMatch[1]);
     }
   }
 
-  // 3) 각 코스의 README + courses.json을 병렬 fetch → 코스별 Paper 카드 생성
+  // 3) 논문 단위로 paper.json 한 번만 fetch (같은 논문의 여러 코스가 공유)
+  const paperJsonCache = new Map<string, PaperJsonData>();
+  const uniquePaperSlugs = [...new Set(courses.map((c) => c.paperSlug))];
+
+  await Promise.all(
+    uniquePaperSlugs
+      .filter((slug) => paperJsonSlugs.has(slug))
+      .map(async (slug) => {
+        const raw = await fetchRawFile(`${slug}/paper.json`);
+        if (raw) {
+          try {
+            paperJsonCache.set(slug, JSON.parse(raw));
+          } catch { /* malformed JSON */ }
+        }
+      })
+  );
+
+  // 4) 각 코스별 Paper 카드 생성 (paper.json 우선, README fallback)
   const papers = await Promise.all(
     courses.map(async ({ paperSlug, courseSlug }) => {
       const [readme, coursesRaw] = await Promise.all([
@@ -115,26 +200,7 @@ async function fetchPapersFromGitHub(): Promise<Paper[]> {
         } catch { /* malformed JSON */ }
       }
 
-      const paper: Paper = {
-        id: `${paperSlug}/${courseSlug}`,
-        title: meta.title || slugToName(paperSlug),
-        description: `${stats.totalConcepts} concepts · ${stats.totalLessons} lessons across ${meta.totalModules || 1} module${meta.totalModules > 1 ? 's' : ''}`,
-        authors: meta.authors
-          ? meta.authors.split(/,\s*(?:and\s+)?/).map((name, i) => ({
-              id: `${paperSlug}-${courseSlug}-${i}`,
-              name: name.replace(/\s+et\s+al\.?/, ' et al.').trim(),
-            }))
-          : [],
-        publishedAt: meta.year ? `${meta.year}-01-01` : '',
-        thumbnailUrl: '',
-        arxivUrl: meta.arxivId ? `https://arxiv.org/abs/${meta.arxivId}` : '',
-        githubUrl: `https://github.com/${REPO_OWNER}/${REPO_NAME}/tree/main/${paperSlug}/${courseSlug}`,
-        submittedBy: 'community',
-        totalStages: meta.totalModules || 1,
-        courseName: slugToName(courseSlug),
-      };
-
-      return paper;
+      return buildPaper(paperSlug, courseSlug, meta, stats, paperJsonCache.get(paperSlug));
     })
   );
 
