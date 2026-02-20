@@ -11,8 +11,7 @@ import { readFileSync, readdirSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Use local ain-js build (includes cogito module)
-import AinModule from '../../ain-js/lib/ain.js';
+import AinModule from '@ainblockchain/ain-js';
 const Ain: any = (AinModule as any).default ?? AinModule;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

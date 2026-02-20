@@ -1,7 +1,7 @@
 /**
  * E2E test: record a lesson and verify cogito picks it up.
  */
-import AinModule from '../../ain-js/lib/ain.js';
+import AinModule from '@ainblockchain/ain-js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
