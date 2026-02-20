@@ -32,6 +32,10 @@ export interface X402PaymentAdapter {
 }
 
 class KiteX402Adapter implements X402PaymentAdapter {
+  /**
+   * Request payment for a stage unlock.
+   * If the service returns 402, attempts MCP-based payment via Kite Passport.
+   */
   async requestPayment(params: {
     stageId: string;
     paperId: string;
@@ -41,23 +45,25 @@ class KiteX402Adapter implements X402PaymentAdapter {
     score?: number;
   }): Promise<PaymentResult> {
     try {
-      // Send passkey public key so server can derive per-user EVM wallet
       const passkeyInfo = loadPasskeyInfo();
-      const res = await fetch('/api/x402/unlock-stage', {
+      const requestBody = {
+        paperId: params.paperId,
+        stageId: params.stageId,
+        stageNum: params.stageNum ?? 0,
+        score: params.score ?? 0,
+        passkeyPublicKey: passkeyInfo?.publicKey || '',
+      };
+
+      let res = await fetch('/api/x402/unlock-stage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paperId: params.paperId,
-          stageId: params.stageId,
-          stageNum: params.stageNum ?? 0,
-          score: params.score ?? 0,
-          passkeyPublicKey: passkeyInfo?.publicKey || '',
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (res.status === 402) {
-        // gokite-aa x402 flow: parse accepts array with payment requirements
+        // x402 flow: try MCP-based payment via Kite Passport
         const body = await res.json().catch(() => null);
+
         if (body?.error === 'insufficient_funds') {
           return {
             success: false,
@@ -65,11 +71,26 @@ class KiteX402Adapter implements X402PaymentAdapter {
             errorCode: 'insufficient_funds',
           };
         }
-        return {
-          success: false,
-          error: 'Payment required. x402 flow initiated.',
-          errorCode: 'payment_required',
-        };
+
+        // Attempt automatic payment via MCP tools
+        const mcpPayment = await this.tryMcpPayment(body);
+        if (mcpPayment) {
+          // Retry with X-Payment header
+          res = await fetch('/api/x402/unlock-stage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Payment': mcpPayment,
+            },
+            body: JSON.stringify(requestBody),
+          });
+        } else {
+          return {
+            success: false,
+            error: 'Payment required. Connect Kite Passport to enable automatic payments.',
+            errorCode: 'payment_required',
+          };
+        }
       }
 
       if (res.status === 403) {
@@ -99,6 +120,46 @@ class KiteX402Adapter implements X402PaymentAdapter {
         error: err instanceof Error ? err.message : 'Network error',
         errorCode: 'network_error',
       };
+    }
+  }
+
+  /**
+   * Try to get an X-Payment token via Kite MCP tools.
+   * Returns the X-Payment string or null if MCP is not available.
+   */
+  private async tryMcpPayment(paymentInfo: Record<string, unknown> | null): Promise<string | null> {
+    try {
+      // 1. Get payer address
+      const payerRes = await fetch('/api/kite-mcp/tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool: 'get_payer_addr', params: {} }),
+      });
+      if (!payerRes.ok) return null;
+      const { payer_addr } = await payerRes.json();
+
+      // 2. Extract payment requirements from 402 body
+      const accepts = (paymentInfo?.accepts as Array<Record<string, string>>)?.[0];
+      const payeeAddr = accepts?.payTo || (paymentInfo?.payTo as string) || '';
+      const amount = accepts?.maxAmountRequired || (paymentInfo?.amount as string) || '0';
+      const tokenType = accepts?.asset || 'USDT';
+
+      if (!payeeAddr) return null;
+
+      // 3. Approve payment
+      const approveRes = await fetch('/api/kite-mcp/tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tool: 'approve_payment',
+          params: { payer_addr, payee_addr: payeeAddr, amount, token_type: tokenType },
+        }),
+      });
+      if (!approveRes.ok) return null;
+      const { x_payment } = await approveRes.json();
+      return x_payment || null;
+    } catch {
+      return null; // MCP not available, fall back to manual payment
     }
   }
 

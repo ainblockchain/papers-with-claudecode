@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import { x402Adapter } from '@/lib/adapters/x402';
 
 export interface PaymentHistoryEntry {
-  txHash: string;
+  txHash?: string;
   timestamp: string;
   paperId: string;
   paperTitle: string;
   stageNum?: number;
   amount: string;
-  method: 'enrollCourse' | 'completeStage';
-  status: 'confirmed' | 'pending' | 'failed';
-  explorerUrl: string;
+  method: string;
+  status: string;
+  explorerUrl?: string;
 }
 
 export interface LearningAttestation {
@@ -21,6 +21,12 @@ export interface LearningAttestation {
   attestationHash: string;
   completedAt: string;
   explorerUrl: string;
+}
+
+interface McpConnectionState {
+  connected: boolean;
+  authMode: 'user_oauth' | 'agent_self_auth' | 'none';
+  agentId: string | null;
 }
 
 interface AgentState {
@@ -35,6 +41,9 @@ interface AgentState {
   balanceWei: string;
   chainId: number;
 
+  // MCP Connection
+  mcpStatus: McpConnectionState;
+
   // Payment History
   paymentHistory: PaymentHistoryEntry[];
   isLoadingHistory: boolean;
@@ -46,6 +55,7 @@ interface AgentState {
   fetchWalletStatus: () => Promise<void>;
   fetchPaymentHistory: () => Promise<void>;
   fetchAttestations: () => Promise<void>;
+  fetchMcpStatus: () => Promise<void>;
   reset: () => void;
 }
 
@@ -57,6 +67,7 @@ const initialState = {
   balance: '0',
   balanceWei: '0',
   chainId: Number(process.env.NEXT_PUBLIC_KITE_CHAIN_ID) || 2368,
+  mcpStatus: { connected: false, authMode: 'none' as const, agentId: null },
   paymentHistory: [],
   isLoadingHistory: false,
   attestations: [],
@@ -106,6 +117,23 @@ export const useAgentStore = create<AgentState>((set) => ({
       set({ attestations: data.attestations ?? [] });
     } catch (err) {
       console.error('Failed to fetch attestations:', err);
+    }
+  },
+
+  fetchMcpStatus: async () => {
+    try {
+      const res = await fetch('/api/kite-mcp/config');
+      if (!res.ok) return;
+      const data = await res.json();
+      set({
+        mcpStatus: {
+          connected: data.connected,
+          authMode: data.authMode || 'none',
+          agentId: data.agentId || null,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to fetch MCP status:', err);
     }
   },
 
