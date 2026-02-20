@@ -98,7 +98,7 @@ export function AgentWalletCard() {
         <div>
           <p className="text-xs text-gray-500 mb-1">Balance</p>
           <p className="text-xl font-bold text-white">
-            {balance} <span className="text-sm text-gray-400">KITE</span>
+            {balance} <span className="text-sm text-gray-400">USDT</span>
           </p>
         </div>
 

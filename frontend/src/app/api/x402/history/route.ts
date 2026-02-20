@@ -1,110 +1,54 @@
 import { NextResponse } from 'next/server';
-import { ethers } from 'ethers';
-import { KiteWalletManager } from '@/lib/kite/wallet';
-import {
-  getChainConfig,
-  LEARNING_LEDGER_ADDRESS,
-  LEARNING_LEDGER_ABI,
-} from '@/lib/kite/contracts';
 
 export async function GET() {
   try {
-    const chainConfig = getChainConfig();
-    const walletManager = new KiteWalletManager();
-
-    if (!walletManager.getIsConfigured() || !LEARNING_LEDGER_ADDRESS) {
+    // Query AIN blockchain for learning event history
+    let progress;
+    try {
+      const { ainAdapter } = await import('@/lib/adapters/ain-blockchain');
+      const accountInfo = await ainAdapter.getAccountInfo();
+      progress = await ainAdapter.getProgress(accountInfo.address);
+    } catch {
+      // AIN not available — return empty history
       return NextResponse.json({ history: [] });
     }
 
-    const wallet = walletManager.getWallet();
-    const provider = walletManager.getProvider();
+    // Transform AIN progress data into payment history format
+    const history: Array<{
+      timestamp: string;
+      paperId: string;
+      paperTitle: string;
+      stageNum?: number;
+      amount: string;
+      method: string;
+      status: string;
+    }> = [];
 
-    const contract = new ethers.Contract(
-      LEARNING_LEDGER_ADDRESS,
-      LEARNING_LEDGER_ABI,
-      provider
-    );
-
-    // Query PaymentReceived events for this agent
-    const paymentFilter = contract.filters.PaymentReceived(wallet.address);
-    const enrollFilter = contract.filters.CourseEnrolled(wallet.address);
-    const stageFilter = contract.filters.StageCompleted(wallet.address);
-
-    const currentBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, currentBlock - 10000); // Last ~10k blocks
-
-    const [paymentEvents, enrollEvents, stageEvents] = await Promise.all([
-      contract.queryFilter(paymentFilter, fromBlock, currentBlock),
-      contract.queryFilter(enrollFilter, fromBlock, currentBlock),
-      contract.queryFilter(stageFilter, fromBlock, currentBlock),
-    ]);
-
-    // Build a map of txHash → event type for enrichment
-    const enrollMap = new Map<string, { paperId: string }>();
-    for (const event of enrollEvents) {
-      const parsed = contract.interface.parseLog({
-        topics: event.topics as string[],
-        data: event.data,
-      });
-      if (parsed) {
-        enrollMap.set(event.transactionHash, {
-          paperId: parsed.args[1],
+    for (const topic of progress.topics) {
+      for (const entry of topic.entries) {
+        history.push({
+          timestamp: new Date(entry.createdAt).toISOString(),
+          paperId: topic.topicPath.replace('courses/', ''),
+          paperTitle: entry.title,
+          amount: entry.price ? `${entry.price} USDT` : '0 USDT',
+          method: entry.depth <= 1 ? 'enroll' : 'stage_complete',
+          status: 'confirmed',
         });
       }
     }
 
-    const stageMap = new Map<
-      string,
-      { paperId: string; stageNum: number; score: number }
-    >();
-    for (const event of stageEvents) {
-      const parsed = contract.interface.parseLog({
-        topics: event.topics as string[],
-        data: event.data,
+    for (const purchase of progress.purchases) {
+      history.push({
+        timestamp: new Date(purchase.accessedAt).toISOString(),
+        paperId: purchase.topicPath.replace('courses/', ''),
+        paperTitle: purchase.topicPath,
+        amount: `${purchase.amount} ${purchase.currency}`,
+        method: 'purchase',
+        status: 'confirmed',
       });
-      if (parsed) {
-        stageMap.set(event.transactionHash, {
-          paperId: parsed.args[1],
-          stageNum: Number(parsed.args[2]),
-          score: Number(parsed.args[3]),
-        });
-      }
     }
 
-    // Build payment history from PaymentReceived events
-    const history = await Promise.all(
-      paymentEvents.map(async (event) => {
-        const txHash = event.transactionHash;
-        const block = await event.getBlock();
-        const parsed = contract.interface.parseLog({
-          topics: event.topics as string[],
-          data: event.data,
-        });
-
-        const paperId = parsed?.args[1] || '';
-        const amount = parsed ? ethers.formatEther(parsed.args[2]) : '0';
-
-        const enrollInfo = enrollMap.get(txHash);
-        const stageInfo = stageMap.get(txHash);
-        const method: 'enrollCourse' | 'completeStage' = enrollInfo
-          ? 'enrollCourse'
-          : 'completeStage';
-
-        return {
-          txHash,
-          timestamp: new Date(block.timestamp * 1000).toISOString(),
-          paperId,
-          paperTitle: paperId, // Title lookup would require additional data source
-          stageNum: stageInfo?.stageNum,
-          amount: `${amount} KITE`,
-          method,
-          status: 'confirmed' as const,
-          explorerUrl: `${chainConfig.explorerUrl}tx/${txHash}`,
-        };
-      })
-    );
-
-    // Sort by timestamp descending (newest first)
+    // Sort by timestamp descending
     history.sort(
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -115,7 +59,7 @@ export async function GET() {
     console.error('[x402/history] Error:', error);
     return NextResponse.json(
       {
-        error: 'chain_error',
+        error: 'history_error',
         message:
           error instanceof Error
             ? error.message

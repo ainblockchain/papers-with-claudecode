@@ -1,7 +1,17 @@
-// Chain configuration constants and LearningLedger ABI
+// Chain configuration constants for Kite AI x402 protocol
 
-export const LEARNING_LEDGER_ADDRESS =
-  process.env.NEXT_PUBLIC_LEARNING_LEDGER_ADDRESS || '';
+// Kite testnet Test USDT token address
+export const KITE_TEST_USDT_ADDRESS = '0x0fF5393387ad2f9f691FD6Fd28e07E3969e27e63';
+
+// Pieverse facilitator for x402 payment verification and settlement
+export const PIEVERSE_FACILITATOR_URL = 'https://facilitator.pieverse.io';
+
+// Kite testnet facilitator address
+export const KITE_TESTNET_FACILITATOR_ADDRESS = '0x12343e649e6b2b2b77649DFAb88f103c02F3C78b';
+
+// Service provider wallet address (receives payments)
+export const MERCHANT_WALLET_ADDRESS =
+  process.env.KITE_MERCHANT_WALLET || '';
 
 export const KITE_CHAIN_CONFIG = {
   testnet: {
@@ -9,11 +19,13 @@ export const KITE_CHAIN_CONFIG = {
     rpcUrl: 'https://rpc-testnet.gokite.ai/',
     explorerUrl: 'https://testnet.kitescan.ai/',
     faucetUrl: 'https://faucet.gokite.ai',
+    network: 'kite-testnet',
   },
   mainnet: {
     chainId: 2366,
     rpcUrl: 'https://rpc.gokite.ai/',
     explorerUrl: 'https://kitescan.ai/',
+    network: 'kite-mainnet',
   },
 } as const;
 
@@ -23,14 +35,3 @@ export function getChainConfig() {
   );
   return chainId === 2366 ? KITE_CHAIN_CONFIG.mainnet : KITE_CHAIN_CONFIG.testnet;
 }
-
-// Human-readable ABI for ethers.js
-export const LEARNING_LEDGER_ABI = [
-  'function enrollCourse(string paperId) payable',
-  'function completeStage(string paperId, uint256 stageNum, uint256 score) payable',
-  'function getProgress(address agent, string paperId) view returns (bool isEnrolled, uint256 currentStage, uint256 totalPaid, uint256 enrolledAt)',
-  'function getStageCompletion(address agent, string paperId, uint256 stageNum) view returns (uint256 completedAt, uint256 score, bytes32 attestationHash)',
-  'event CourseEnrolled(address indexed agent, string paperId, uint256 timestamp)',
-  'event StageCompleted(address indexed agent, string paperId, uint256 stageNum, uint256 score)',
-  'event PaymentReceived(address indexed from, string paperId, uint256 amount)',
-] as const;

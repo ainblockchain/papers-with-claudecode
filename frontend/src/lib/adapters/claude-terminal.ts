@@ -58,7 +58,7 @@ class MockClaudeTerminalAdapter implements ClaudeTerminalAdapter {
         stageId: params.nextStageId,
         paperId: params.paperId,
         amount: 0.001,
-        currency: 'KITE',
+        currency: 'USDT',
         stageNum: params.stageNum,
         score: params.score,
       });

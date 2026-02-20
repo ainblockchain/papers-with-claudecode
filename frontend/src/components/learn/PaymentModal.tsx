@@ -58,7 +58,7 @@ export function PaymentModal() {
         stageId: nextStage.id,
         paperId: currentPaper.id,
         amount: 0.001,
-        currency: 'KITE',
+        currency: 'USDT',
         stageNum: nextStage.stageNumber,
         score: 0,
       });
@@ -141,7 +141,7 @@ export function PaymentModal() {
               </p>
               <div className="mt-4 p-3 bg-[#16162a] rounded-lg">
                 <p className="text-xs text-gray-500">x402 Payment</p>
-                <p className="text-lg font-bold text-white">0.001 KITE</p>
+                <p className="text-lg font-bold text-white">0.001 USDT</p>
               </div>
 
               {/* Progress indicator */}
@@ -166,21 +166,9 @@ export function PaymentModal() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 mt-1 text-xs text-blue-400 hover:text-blue-300"
                         >
-                          Get test KITE tokens
+                          Get test USDT tokens
                           <ExternalLink className="h-3 w-3" />
                         </a>
-                      )}
-                      {errorCode === 'spending_limit_exceeded' && (
-                        <a
-                          href="/agent-dashboard"
-                          className="inline-flex items-center gap-1 mt-1 text-xs text-blue-400 hover:text-blue-300"
-                        >
-                          Update Standing Intent
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                      {errorCode === 'session_expired' && (
-                        <p className="mt-1 text-xs text-gray-400">Please re-authenticate to continue.</p>
                       )}
                     </div>
                   </div>
