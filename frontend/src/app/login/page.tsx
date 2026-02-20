@@ -45,13 +45,12 @@ function StepIndicator({ currentStep }: { currentStep: 1 | 2 }) {
   );
 }
 
-/** Passkey step — verify existing or register new */
+/** Passkey step — verify existing or register new (passkey is mandatory) */
 function PasskeyStep({
   user,
   existingPasskey,
   onRegister,
   onVerify,
-  onSkip,
   processing,
   error,
 }: {
@@ -59,7 +58,6 @@ function PasskeyStep({
   existingPasskey: PasskeyInfo | null;
   onRegister: () => void;
   onVerify: () => void;
-  onSkip: () => void;
   processing: boolean;
   error: string | null;
 }) {
@@ -130,17 +128,15 @@ function PasskeyStep({
               {error && <p className="mt-3 text-xs text-center text-red-500">{error}</p>}
             </>
           ) : (
-            <p className="text-sm text-center text-[#6B7280]">
-              Your browser does not support passkeys.
-            </p>
+            <div className="text-center">
+              <p className="text-sm text-[#6B7280]">
+                Your browser does not support passkeys.
+              </p>
+              <p className="mt-2 text-xs text-[#9CA3AF]">
+                Please use a modern browser (Chrome, Safari, Edge) to continue.
+              </p>
+            </div>
           )}
-
-          <button
-            onClick={onSkip}
-            className="mt-3 w-full text-xs text-center text-[#6B7280] hover:text-[#111827] transition-colors"
-          >
-            Skip for now
-          </button>
         </div>
       </div>
     </div>
@@ -216,10 +212,6 @@ function LoginContent() {
     }
   };
 
-  const handleSkipPasskey = () => {
-    router.push('/explore');
-  };
-
   // ── Loading ──
   if (isLoading) {
     return (
@@ -238,7 +230,7 @@ function LoginContent() {
         existingPasskey={existingPasskey}
         onRegister={handleRegisterPasskey}
         onVerify={handleVerifyPasskey}
-        onSkip={handleSkipPasskey}
+
         processing={processing}
         error={error}
       />
@@ -254,7 +246,7 @@ function LoginContent() {
         existingPasskey={existingPasskey}
         onRegister={handleRegisterPasskey}
         onVerify={handleVerifyPasskey}
-        onSkip={handleSkipPasskey}
+
         processing={processing}
         error={error}
       />
