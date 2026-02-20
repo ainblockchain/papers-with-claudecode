@@ -24,5 +24,6 @@ export interface Paper {
   organization?: { name: string; logoUrl: string };
   submittedBy: string;
   totalStages: number;
+  courseName?: string;
   courses?: CourseInfo[];
 }
