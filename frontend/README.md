@@ -1,6 +1,6 @@
 # Frontend
 
-> **Live**: [paperswithclaudecode.com](http://paperswithclaudecode.com/)
+> **Live**: [paperswithclaudecode.com](https://paperswithclaudecode.com/)
 
 A Next.js-based web application for paper exploration and knowledge graph learning platform.
 
