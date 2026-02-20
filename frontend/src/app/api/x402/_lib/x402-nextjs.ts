@@ -1,233 +1,242 @@
-// Next.js App Router adapter for x402 payment gating
-// Wraps @x402/core server components for use with Next.js route handlers
+// Next.js App Router adapter for Kite x402 payment gating
+// Implements gokite-aa scheme with Pieverse facilitator
 
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  x402ResourceServer,
-  x402HTTPResourceServer,
-} from '@x402/core/server';
+  getChainConfig,
+  KITE_TEST_USDT_ADDRESS,
+  PIEVERSE_FACILITATOR_URL,
+  MERCHANT_WALLET_ADDRESS,
+} from '@/lib/kite/contracts';
 
 // Payment requirement configuration for a route
 export interface X402RouteConfig {
-  price: string; // e.g. "0.001"
-  network: string; // e.g. "eip155:2368"
+  /** Payment amount in wei (string) */
+  maxAmountRequired: string;
+  /** Human-readable service description */
   description: string;
+  /** API resource URL */
   resource: string;
-  payTo: string; // merchant wallet address
+  /** Service wallet address to receive payment */
+  payTo: string;
+  /** Service display name */
+  merchantName: string;
+  /** API output schema for AI agent discovery */
+  outputSchema?: {
+    input: Record<string, unknown>;
+    output: Record<string, unknown>;
+  };
 }
 
-// Next.js adapter implementing the x402 HTTPAdapter interface
-class NextJsAdapter {
-  private req: NextRequest;
-  private bodyText: string;
+/** Decoded X-PAYMENT token */
+interface DecodedPayment {
+  authorization: Record<string, unknown>;
+  signature: string;
+}
 
-  constructor(req: NextRequest, bodyText: string) {
-    this.req = req;
-    this.bodyText = bodyText;
-  }
+/**
+ * Build a 402 Payment Required response body per Kite x402 spec.
+ */
+function build402Response(config: X402RouteConfig, network: string): object {
+  return {
+    error: 'X-PAYMENT header is required',
+    accepts: [
+      {
+        scheme: 'gokite-aa',
+        network,
+        maxAmountRequired: config.maxAmountRequired,
+        resource: config.resource,
+        description: config.description,
+        mimeType: 'application/json',
+        outputSchema: config.outputSchema || null,
+        payTo: config.payTo,
+        maxTimeoutSeconds: 300,
+        asset: KITE_TEST_USDT_ADDRESS,
+        extra: null,
+        merchantName: config.merchantName,
+      },
+    ],
+    x402Version: 1,
+  };
+}
 
-  getHeader(name: string): string | undefined {
-    return this.req.headers.get(name) ?? undefined;
-  }
-
-  getMethod(): string {
-    return this.req.method;
-  }
-
-  getPath(): string {
-    return new URL(this.req.url).pathname;
-  }
-
-  getUrl(): string {
-    return this.req.url;
-  }
-
-  getAcceptHeader(): string {
-    return this.req.headers.get('accept') || '';
-  }
-
-  getUserAgent(): string {
-    return this.req.headers.get('user-agent') || '';
-  }
-
-  getQueryParams(): Record<string, string | string[]> {
-    const params: Record<string, string | string[]> = {};
-    new URL(this.req.url).searchParams.forEach((value, key) => {
-      params[key] = value;
-    });
-    return params;
-  }
-
-  getQueryParam(name: string): string | string[] | undefined {
-    return new URL(this.req.url).searchParams.get(name) ?? undefined;
-  }
-
-  getBody(): unknown {
-    try {
-      return JSON.parse(this.bodyText);
-    } catch {
-      return undefined;
+/**
+ * Decode the X-PAYMENT header (base64-encoded JSON).
+ */
+function decodePaymentToken(token: string): DecodedPayment | null {
+  try {
+    const decoded = JSON.parse(Buffer.from(token, 'base64').toString());
+    if (decoded.authorization && decoded.signature) {
+      return decoded as DecodedPayment;
     }
+    return null;
+  } catch {
+    return null;
   }
 }
 
 /**
- * Wraps a Next.js route handler with x402 payment verification.
+ * Verify payment via Pieverse facilitator.
+ */
+async function verifyPayment(
+  payment: DecodedPayment,
+  network: string
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${PIEVERSE_FACILITATOR_URL}/v2/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        authorization: payment.authorization,
+        signature: payment.signature,
+        network,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      return {
+        ok: false,
+        error: body.error || `Verification failed (${res.status})`,
+      };
+    }
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Verification request failed',
+    };
+  }
+}
+
+/**
+ * Settle payment via Pieverse facilitator (executes on-chain transfer).
+ */
+async function settlePayment(
+  payment: DecodedPayment,
+  network: string
+): Promise<{ ok: boolean; data?: Record<string, unknown>; error?: string }> {
+  try {
+    const res = await fetch(`${PIEVERSE_FACILITATOR_URL}/v2/settle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        authorization: payment.authorization,
+        signature: payment.signature,
+        network,
+      }),
+    });
+
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: body.error || `Settlement failed (${res.status})`,
+      };
+    }
+    return { ok: true, data: body };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Settlement request failed',
+    };
+  }
+}
+
+/**
+ * Wraps a Next.js route handler with Kite x402 payment gating.
  *
- * If the request does not include a valid payment header, returns 402.
- * If payment is verified and settled, calls the handler.
+ * Flow:
+ * 1. If no X-PAYMENT header → return 402 with payment requirements
+ * 2. If X-PAYMENT present → decode, verify, settle, then call handler
  */
 export async function withX402Payment(
   req: NextRequest,
   routeConfig: X402RouteConfig,
   handler: (req: NextRequest, bodyText: string) => Promise<NextResponse>
 ): Promise<NextResponse> {
+  const chainConfig = getChainConfig();
+  const network = chainConfig.network;
+
+  // Read body once for potential re-use
   const bodyText = await req.text().catch(() => '');
 
-  // Build route configuration for x402
-  const routeKey = `${req.method} ${new URL(req.url).pathname}`;
-  const routes = {
-    [routeKey]: {
-      accepts: {
-        scheme: 'exact' as const,
-        payTo: routeConfig.payTo,
-        price: routeConfig.price,
-        network: routeConfig.network,
-        maxTimeoutSeconds: 60,
-        extra: {},
+  // Check for X-PAYMENT header (case-insensitive)
+  const paymentToken =
+    req.headers.get('x-payment') ||
+    req.headers.get('X-PAYMENT') ||
+    req.headers.get('X-Payment');
+
+  // No payment token → return 402
+  if (!paymentToken) {
+    return NextResponse.json(build402Response(routeConfig, network), {
+      status: 402,
+    });
+  }
+
+  // Decode the payment token
+  const decoded = decodePaymentToken(paymentToken);
+  if (!decoded) {
+    return NextResponse.json(
+      { error: 'invalid_payment', message: 'Invalid X-PAYMENT token format' },
+      { status: 400 }
+    );
+  }
+
+  // Verify payment via Pieverse facilitator
+  const verifyResult = await verifyPayment(decoded, network);
+  if (!verifyResult.ok) {
+    return NextResponse.json(
+      {
+        error: 'payment_verification_failed',
+        message: verifyResult.error || 'Payment verification failed',
       },
-      resource: routeConfig.resource,
-      description: routeConfig.description,
-    },
-  };
-
-  // Create x402 server instances
-  const resourceServer = new x402ResourceServer();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const httpServer = new x402HTTPResourceServer(resourceServer, routes as any);
-
-  // Initialize facilitator connection
-  try {
-    await httpServer.initialize();
-  } catch {
-    // Facilitator may not be available — continue anyway for payment requirement generation
+      { status: 402 }
+    );
   }
 
-  // Build adapter and context
-  const adapter = new NextJsAdapter(req, bodyText);
-  const context = {
-    adapter,
-    path: new URL(req.url).pathname,
-    method: req.method,
-    paymentHeader:
-      adapter.getHeader('payment-signature') ||
-      adapter.getHeader('x-payment'),
-  };
-
-  // Check if payment is required
-  if (!httpServer.requiresPayment(context)) {
-    return handler(req, bodyText);
+  // Settle payment via Pieverse facilitator
+  const settleResult = await settlePayment(decoded, network);
+  if (!settleResult.ok) {
+    return NextResponse.json(
+      {
+        error: 'settlement_failed',
+        message: settleResult.error || 'Payment settlement failed',
+      },
+      { status: 500 }
+    );
   }
 
-  // Process the HTTP request through x402
-  const result = await httpServer.processHTTPRequest(context);
+  // Payment confirmed — execute the handler
+  const response = await handler(req, bodyText);
 
-  switch (result.type) {
-    case 'no-payment-required':
-      return handler(req, bodyText);
-
-    case 'payment-error': {
-      const { response } = result;
-      const headers: Record<string, string> = {};
-      Object.entries(response.headers).forEach(([key, value]) => {
-        headers[key] = String(value);
-      });
-
-      if (response.isHtml) {
-        return new NextResponse(response.body as string, {
-          status: response.status,
-          headers: { ...headers, 'content-type': 'text/html' },
-        });
-      }
-
-      return NextResponse.json(response.body || {}, {
-        status: response.status,
-        headers,
-      });
-    }
-
-    case 'payment-verified': {
-      const { paymentPayload, paymentRequirements, declaredExtensions } = result;
-
-      // Execute the handler first
-      const handlerResponse = await handler(req, bodyText);
-
-      // If handler returned an error, don't settle
-      if (handlerResponse.status >= 400) {
-        return handlerResponse;
-      }
-
-      // Settle the payment
-      try {
-        const settleResult = await httpServer.processSettlement(
-          paymentPayload,
-          paymentRequirements,
-          declaredExtensions
-        );
-
-        if (!settleResult.success) {
-          return NextResponse.json(
-            {
-              error: 'settlement_failed',
-              message: `Settlement failed: ${settleResult.errorReason}`,
-            },
-            { status: 500 }
-          );
-        }
-
-        // Add settlement headers to the handler response
-        const responseHeaders = new Headers(handlerResponse.headers);
-        Object.entries(settleResult.headers).forEach(([key, value]) => {
-          responseHeaders.set(key, String(value));
-        });
-
-        // Clone response with settlement headers
-        const body = await handlerResponse.text();
-        return new NextResponse(body, {
-          status: handlerResponse.status,
-          headers: responseHeaders,
-        });
-      } catch (error) {
-        return NextResponse.json(
-          {
-            error: 'settlement_failed',
-            message:
-              error instanceof Error ? error.message : 'Unknown settlement error',
-          },
-          { status: 500 }
-        );
-      }
-    }
-
-    default:
-      return NextResponse.json(
-        { error: 'payment_required', message: 'Payment processing failed' },
-        { status: 402 }
-      );
+  // Add settlement info header
+  if (settleResult.data) {
+    const headers = new Headers(response.headers);
+    headers.set('X-Payment-Settlement', JSON.stringify(settleResult.data));
+    const body = await response.text();
+    return new NextResponse(body, {
+      status: response.status,
+      headers,
+    });
   }
+
+  return response;
 }
 
 /**
  * Helper to build the default route config from environment variables.
  */
-export function buildRouteConfig(overrides?: Partial<X402RouteConfig>): X402RouteConfig {
-  const chainId = process.env.NEXT_PUBLIC_KITE_CHAIN_ID || '2368';
+export function buildRouteConfig(
+  overrides?: Partial<X402RouteConfig>
+): X402RouteConfig {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   return {
-    price: '0.001',
-    network: `eip155:${chainId}`,
-    description: 'Unlock learning stage',
-    resource: '/api/x402/unlock-stage',
-    payTo: process.env.KITE_MERCHANT_WALLET || '',
+    maxAmountRequired: process.env.KITE_X402_PRICE || '1000000000000000000', // 1 USDT in wei
+    description: 'Papers LMS Learning Service',
+    resource: `${baseUrl}/api/x402/unlock-stage`,
+    payTo: MERCHANT_WALLET_ADDRESS,
+    merchantName: process.env.KITE_MERCHANT_NAME || 'Papers LMS',
     ...overrides,
   };
 }

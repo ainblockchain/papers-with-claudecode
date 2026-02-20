@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AgentWalletCard } from '@/components/agent/AgentWalletCard';
 import { PaymentHistory } from '@/components/agent/PaymentHistory';
 import { StandingIntentConfig } from '@/components/agent/StandingIntentConfig';
-import { useAgentStore, LearningAttestation } from '@/stores/useAgentStore';
+import { useAgentStore, type LearningAttestation } from '@/stores/useAgentStore';
 import { AinWalletInfo } from '@/components/ain/AinWalletInfo';
 import { KnowledgeGraph } from '@/components/ain/KnowledgeGraph';
 import { LearnerProgressView } from '@/components/ain/LearnerProgressView';
@@ -105,7 +105,7 @@ export default function AgentDashboardPage() {
       {/* Content */}
       <div className="mx-auto max-w-[1280px] px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
-          {/* Left Column: Identity + Standing Intent */}
+          {/* Left Column: Identity + Session Info */}
           <div className="space-y-6">
             <AgentWalletCard />
             <AinWalletInfo />

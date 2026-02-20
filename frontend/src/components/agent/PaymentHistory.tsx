@@ -65,7 +65,7 @@ export function PaymentHistory() {
               </thead>
               <tbody>
                 {paymentHistory.map((entry, i) => (
-                  <tr key={entry.txHash} className="border-b border-gray-800 hover:bg-white/5">
+                  <tr key={entry.txHash || `entry-${i}`} className="border-b border-gray-800 hover:bg-white/5">
                     <td className="py-2 text-gray-400">{i + 1}</td>
                     <td className="py-2 text-gray-300">{relativeTime(entry.timestamp)}</td>
                     <td className="py-2 text-gray-200 max-w-[120px] truncate">
@@ -75,7 +75,7 @@ export function PaymentHistory() {
                       {entry.stageNum != null ? `Stage ${entry.stageNum}` : '-'}
                     </td>
                     <td className="py-2 text-right text-white font-mono">
-                      {entry.amount} <span className="text-gray-500">KITE</span>
+                      {entry.amount} <span className="text-gray-500">USDT</span>
                     </td>
                     <td className="py-2">
                       <a
@@ -84,7 +84,7 @@ export function PaymentHistory() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 font-mono text-xs"
                       >
-                        {truncateHash(entry.txHash)}
+                        {entry.txHash ? truncateHash(entry.txHash) : '-'}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                     </td>

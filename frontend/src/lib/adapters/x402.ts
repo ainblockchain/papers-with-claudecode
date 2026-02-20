@@ -16,8 +16,6 @@ export interface WalletStatus {
   address: string;
   balance: string;
   agentDID: string;
-  dailyUsed: string;
-  dailyCap: string;
 }
 
 export interface X402PaymentAdapter {
@@ -58,15 +56,12 @@ class KiteX402Adapter implements X402PaymentAdapter {
       });
 
       if (res.status === 402) {
-        // x402 flow: parse payment requirements and retry with signature
-        // The server-side x402 middleware handles the 402 → sign → settle flow.
-        // In production, x402Fetch from @x402/fetch handles this automatically.
-        // For now, we parse the 402 body for error details.
+        // gokite-aa x402 flow: parse accepts array with payment requirements
         const body = await res.json().catch(() => null);
         if (body?.error === 'insufficient_funds') {
           return {
             success: false,
-            error: `Insufficient KITE balance. Required: ${body.required}, Available: ${body.available}`,
+            error: `Insufficient USDT balance. Required: ${body.required}, Available: ${body.available}`,
             errorCode: 'insufficient_funds',
           };
         }
@@ -79,22 +74,7 @@ class KiteX402Adapter implements X402PaymentAdapter {
 
       if (res.status === 403) {
         const body = await res.json().catch(() => null);
-        const code = body?.error ?? 'forbidden';
-        if (code === 'spending_limit_exceeded') {
-          return {
-            success: false,
-            error: 'Daily spending limit reached. Update your Standing Intent in the Agent Dashboard.',
-            errorCode: 'spending_limit_exceeded',
-          };
-        }
-        if (code === 'session_expired') {
-          return {
-            success: false,
-            error: 'Session expired. Please re-authenticate.',
-            errorCode: 'session_expired',
-          };
-        }
-        return { success: false, error: body?.message ?? 'Forbidden', errorCode: code };
+        return { success: false, error: body?.message ?? 'Forbidden', errorCode: body?.error ?? 'forbidden' };
       }
 
       if (!res.ok) {
@@ -141,8 +121,6 @@ class KiteX402Adapter implements X402PaymentAdapter {
       address: data.walletAddress,
       balance: data.balance,
       agentDID: data.agentDID,
-      dailyUsed: data.standingIntent?.dailyUsed ?? '0',
-      dailyCap: data.standingIntent?.dailyCap ?? '0',
     };
   }
 }
@@ -176,8 +154,6 @@ class MockX402Adapter implements X402PaymentAdapter {
       address: '0x' + '1'.repeat(40),
       balance: '0.847',
       agentDID: 'did:kite:learner.eth/claude-tutor/v1',
-      dailyUsed: '0.023',
-      dailyCap: '0.1',
     };
   }
 }

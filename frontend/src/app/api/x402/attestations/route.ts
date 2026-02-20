@@ -1,92 +1,64 @@
 import { NextResponse } from 'next/server';
-import { ethers } from 'ethers';
-import { KiteWalletManager } from '@/lib/kite/wallet';
-import {
-  getChainConfig,
-  LEARNING_LEDGER_ADDRESS,
-  LEARNING_LEDGER_ABI,
-} from '@/lib/kite/contracts';
 
 export async function GET() {
   try {
-    const chainConfig = getChainConfig();
-    const walletManager = new KiteWalletManager();
-
-    if (!walletManager.getIsConfigured() || !LEARNING_LEDGER_ADDRESS) {
+    // Query AIN blockchain for learning attestations
+    let progress;
+    try {
+      const { ainAdapter } = await import('@/lib/adapters/ain-blockchain');
+      const accountInfo = await ainAdapter.getAccountInfo();
+      progress = await ainAdapter.getProgress(accountInfo.address);
+    } catch {
+      // AIN not available — return empty attestations
       return NextResponse.json({ attestations: [] });
     }
 
-    const wallet = walletManager.getWallet();
-    const provider = walletManager.getProvider();
+    // Transform AIN progress entries into attestation format
+    const attestations: Array<{
+      paperId: string;
+      paperTitle: string;
+      stageNum: number;
+      score: number;
+      attestationHash: string;
+      completedAt: string;
+    }> = [];
 
-    const contract = new ethers.Contract(
-      LEARNING_LEDGER_ADDRESS,
-      LEARNING_LEDGER_ABI,
-      provider
-    );
+    for (const topic of progress.topics) {
+      for (const entry of topic.entries) {
+        if (entry.depth >= 2) {
+          // depth >= 2 means stage completion
+          const crypto = await import('crypto');
+          const hash = crypto
+            .createHash('sha256')
+            .update(
+              `${topic.topicPath}:${entry.entryId}:${entry.depth}:${entry.createdAt}`
+            )
+            .digest('hex');
 
-    // Query StageCompleted events for this agent
-    const filter = contract.filters.StageCompleted(wallet.address);
-    const currentBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, currentBlock - 10000);
-
-    const events = await contract.queryFilter(filter, fromBlock, currentBlock);
-
-    const attestations = await Promise.all(
-      events.map(async (event) => {
-        const block = await event.getBlock();
-        const parsed = contract.interface.parseLog({
-          topics: event.topics as string[],
-          data: event.data,
-        });
-
-        if (!parsed) return null;
-
-        const paperId = parsed.args[1];
-        const stageNum = Number(parsed.args[2]);
-        const score = Number(parsed.args[3]);
-
-        // Read attestationHash from contract
-        let attestationHash = '';
-        try {
-          const completion = await contract.getStageCompletion(
-            wallet.address,
-            paperId,
-            stageNum
-          );
-          attestationHash = completion[2]; // attestationHash is the 3rd return value
-        } catch {
-          // If we can't read attestation, use event tx hash as fallback
-          attestationHash = event.transactionHash;
+          attestations.push({
+            paperId: topic.topicPath.replace('courses/', ''),
+            paperTitle: entry.title,
+            stageNum: entry.depth - 1,
+            score: 100, // AIN doesn't store score; default to 100 for completed
+            attestationHash: `0x${hash}`,
+            completedAt: new Date(entry.createdAt).toISOString(),
+          });
         }
+      }
+    }
 
-        return {
-          paperId,
-          paperTitle: paperId,
-          stageNum,
-          score,
-          attestationHash,
-          completedAt: new Date(block.timestamp * 1000).toISOString(),
-          explorerUrl: `${chainConfig.explorerUrl}tx/${event.transactionHash}`,
-        };
-      })
+    // Sort by completedAt descending
+    attestations.sort(
+      (a, b) =>
+        new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
     );
 
-    // Filter out nulls and sort by completedAt descending
-    const validAttestations = attestations
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          new Date(b!.completedAt).getTime() -
-          new Date(a!.completedAt).getTime()
-      );
-
-    return NextResponse.json({ attestations: validAttestations });
+    return NextResponse.json({ attestations });
   } catch (error) {
     console.error('[x402/attestations] Error:', error);
     return NextResponse.json(
       {
-        error: 'chain_error',
+        error: 'attestations_error',
         message:
           error instanceof Error
             ? error.message
