@@ -1,303 +1,374 @@
 # Papers with Claude Code — Demo Script
 
 > **Runtime**: ~15 minutes
-> **Prerequisites**: Debug frontend running at `http://localhost:3000`, authenticated via GitHub OAuth
-> **Devnet**: `https://devnet-api.ainetwork.ai` with 33 topics, 150 graph nodes, 17 genesis papers seeded
+> **Prerequisites**: Frontend running at `http://localhost:3000` (or deployed URL), backend API available
+> **Blockchain**: AIN devnet with seeded topics and genesis papers, Kite Chain for x402 payments
 
 ---
 
-## Act 1: The Big Picture (2 min)
-
-### Screen: Terminal / Slides
-
-**Narration:**
-"Papers with Claude Code turns academic papers into an on-chain knowledge graph. Developers record design decisions, the system discovers relevant papers and source code, enriches them with a local LLM, and serves the content through x402 micropayments — all on the AIN blockchain."
-
-**Show:**
-- Terminal: `tree -L 1 /home/comcom/git/papers-with-claudecode/` to show project structure
-- Highlight: `ain-js/` (blockchain SDK), `cogito/` (enrichment engine), `ainblockchain-integration/debug-frontend/` (what we'll demo), `frontend/` (learner UI), `knowledge-graph-builder/` (pipeline)
-
----
-
-## Act 2: Connect to Devnet (1 min)
-
-### Screen: Browser → `http://localhost:3000`
-
-**Narration:**
-"This is the debug dashboard — our control panel for the AIN blockchain knowledge graph."
-
-**Steps:**
-1. Show the page title: **AIN Knowledge Debug Dashboard**
-2. Click **"Sign in with GitHub"** in the Auth & Wallet section
-3. After OAuth redirect, the dashboard populates with all sections
-
-### Screen: Auth & Wallet section (expanded)
-
-**Narration:**
-"We're connected to the AIN devnet. The ConfigPanel shows our provider URL and two known accounts — the genesis owner who seeded the papers, and a test account."
-
-**Show:**
-- Green connection indicator next to `https://devnet-api.ainetwork.ai`
-- Known Accounts: Genesis Owner `0x00ADEc28...`, Test Account `0x01A0980d...`
-- Wallet balance: **1,000,000 AIN**
-
----
-
-## Act 3: Quick Actions — One-Click Setup (1 min)
-
-### Screen: Quick Actions bar (always visible below title)
-
-**Narration:**
-"The Quick Actions bar gives us one-click access to common operations."
-
-**Steps:**
-1. Click **"Check Balance"** → shows wallet address + 1M AIN balance
-2. Click **"Setup App"** → initializes the `/apps/knowledge` schema on-chain (already done, but idempotent)
-3. Show the JSON result confirming success
-
----
-
-## Act 4: Browse the Knowledge Graph (2 min)
-
-### Screen: Topics section (click to expand)
-
-**Narration:**
-"The devnet has 33 topics organized in a hierarchy: AI → Transformers → Attention, Encoder-Only, Decoder-Only, Vision, Diffusion, and State-Space Models."
-
-**Steps:**
-1. Expand **Topics** section
-2. Click **Fetch** to load the topic tree
-3. Show the hierarchy: `ai/transformers/attention`, `ai/transformers/decoder-only`, etc.
-4. Click a topic like `ai/transformers/attention` to see its info
-
-### Screen: Knowledge Graph section (click to expand)
-
-**Narration:**
-"The knowledge graph has 150 nodes — each representing a paper or exploration. These are the 17 landmark papers from 'Attention Is All You Need' through Mamba, plus explorations building on them."
-
-**Steps:**
-1. Expand **Knowledge Graph** section
-2. Click **Fetch Graph** → shows 150 nodes
-3. Scroll through nodes — point out Transformer, BERT, GPT family, ViT, CLIP, LLaMA, Mamba
-4. Show node details: `topic_path`, `depth`, `creator`, `created_at`
-
----
-
-## Act 5: Submit an Exploration with Presets (2 min)
-
-### Screen: Explore section (click to expand)
-
-**Narration:**
-"Now let's submit a new exploration that builds on existing papers. The form has 7 sample presets — each pre-fills all fields including parent entry and related entries, which create edges in the knowledge graph."
-
-**Steps:**
-1. Expand **Explore** section
-2. Point out the **Sample Presets** pill buttons at the top
-3. Click **"Multi-Head Attention Deep Dive"**
-4. Show how all fields auto-fill:
-   - Topic Path: `ai/transformers/attention`
-   - Title, Content, Summary, Depth (4), Tags
-   - **Parent Entry**: Transformer paper (`0x00ADEc28...`, `ai/transformers/attention`, `transformer_2017`)
-5. Click **"Submit Exploration"**
-6. Show the JSON result with `entryId` and transaction hash
-
-**Narration:**
-"This created an on-chain entry AND a graph edge linking our exploration to the original Transformer paper. The knowledge graph grows organically."
-
----
-
-## Act 6: Seed 7 Explorations at Once (1.5 min)
-
-### Screen: Quick Actions bar
-
-**Narration:**
-"Let's seed all 7 sample explorations to populate the graph with edges."
-
-**Steps:**
-1. Click **"Seed 7 Samples"** in the Quick Actions bar
-2. Watch the progress indicator: `Seeding 1/7: Multi-Head Attention Deep Dive`, `2/7: GPT-4 and Scaling Laws`, etc.
-3. Wait for completion (~30s)
-4. Show the results array — 7 entries, each with `ok: true`
-
-**Narration:**
-"Each exploration has a parent entry (extends) and related entries, creating a web of connections: GPT-4 extends GPT-3 and relates to LLaMA, BERT for Dense Retrieval extends BERT and relates to RoBERTa and XLNet."
-
----
-
-## Act 7: View Explorations (1 min)
-
-### Screen: Explorations section (click to expand)
-
-**Narration:**
-"Now let's browse what we just created."
-
-**Steps:**
-1. Expand **Explorations** section
-2. Click **"Genesis Owner (all)"** preset → switches to By User mode, fills address
-3. Click **Fetch**
-4. Show the exploration cards: titles, summaries, depth badges, tags
-5. Switch to **By Topic** mode
-6. Click **`ai/transformers/decoder-only`** preset → fills address + topic
-7. Click **Fetch** → shows GPT-4 and Scaling Laws, Fine-tuning GPT-2
-
----
-
-## Act 8: Frontier Statistics (1 min)
-
-### Screen: Frontier section (click to expand)
-
-**Narration:**
-"Frontier maps show community-wide exploration stats — how many people explored each topic and how deep they went."
-
-**Steps:**
-1. Expand **Frontier** section
-2. In Frontier Map Visualization, click **"All Topics"** preset, then **Fetch**
-3. Show progress bars: explorer count, max depth, avg depth per topic
-4. In Frontier View below, click **`ai/transformers/decoder-only`** preset
-5. Click **Fetch Frontier** → shows stats + list of explorers with addresses and depths
-
----
-
-## Act 9: Debug Inspector — Raw Blockchain State (2 min)
-
-### Screen: Debug Inspector section (click to expand)
-
-**Narration:**
-"The Debug Inspector gives us direct access to on-chain state — like a blockchain microscope."
-
-### Tab 1: Raw State
-
-**Steps:**
-1. Click the **`graph/nodes`** quick-fill button
-2. Click **getValue** → shows all 150+ graph nodes as raw JSON
-3. Click **`topics/ai/transformers`** → **getValue** → shows topic hierarchy
-4. Click **getRule** on the same path → shows the write rules (who can write)
-5. Click **getOwner** → shows ownership config
-
-**Narration:**
-"getValue reads data, getRule shows permissions, getOwner shows who controls the path. This is how the AIN blockchain enforces access control."
-
-### Tab 2: Node Inspector
-
-**Steps:**
-1. Click the **Node Inspector** tab
-2. From the dropdown, select **"Attention Is All You Need (Transformer)"**
-3. Click **Inspect** → shows the node properties + edges
-
-### Tab 3: Entry Lookup
-
-**Steps:**
-1. Click the **Entry Lookup** tab
-2. From the dropdown, select **"BERT: Pre-training of Deep Bidirectional Transformers"**
-3. Click **Lookup Entry** → shows the full exploration data (title, content, summary, depth, tags, timestamps)
-
-### Tab 4: Rule Evaluator
-
-**Steps:**
-1. Click the **Rule Evaluator** tab
-2. Click the **`topics/ai/transformers`** quick-fill button
-3. Address is pre-filled with genesis owner
-4. Click **Eval Rule** → shows **ALLOWED** (green badge) + full response
-5. Change address to `0x0000000000000000000000000000000000000000`
-6. Click **Eval Rule** → shows **DENIED** (red badge)
-
-**Narration:**
-"The rule evaluator lets us test permissions before writing. The genesis owner is allowed, but a random address is denied."
-
----
-
-## Act 10: x402 Gated Content (1 min)
-
-### Screen: Access (x402) section
-
-**Narration:**
-"The x402 protocol gates content behind micropayments. Let's try accessing a paper."
-
-**Steps:**
-1. Expand **Access (x402)** section
-2. From the **"Pick from genesis papers"** dropdown, select **"GPT-3: Language Models are Few-Shot Learners"**
-3. Fields auto-fill with owner, topic path, entry ID
-4. Click **Request Access**
-5. Show the response — payment status and content (or payment required)
-
-### Screen: Publish (x402 Gated) section
-
-**Steps:**
-1. Expand **Publish (x402 Gated)** section
-2. Click **"Transformer Fundamentals"** preset
-3. Show pre-filled fields: topic path, title, content, price (10 AIN), parent linked to Transformer paper
-4. Click **Publish Course** → show the result with contentId and contentHash
-
----
-
-## Act 11: Learner Progress (0.5 min)
-
-### Screen: Learner Progress section
-
-**Narration:**
-"Finally, we can look up any address's complete learning journey."
-
-**Steps:**
-1. Expand **Learner Progress** section
-2. Click **"Genesis Owner"** preset → fills address
-3. Click **Lookup**
-4. Show stats: total topics, total entries, purchases
-5. Expand a topic to see individual exploration entries with depth, timestamps, and graph connections
-
----
-
-## Act 12: The Full Stack (1 min)
+## Act 1: The Big Picture (1.5 min)
 
 ### Screen: Terminal
 
 **Narration:**
-"What you've seen is the debug frontend — the developer's view. Behind the scenes:"
+"Papers with Claude Code transforms arXiv papers, GitHub repos, and HuggingFace models into interactive, gamified learning courses — powered by Claude Code. Learners explore a 2D village, enter dungeon-style stages, answer quizzes, and pay with micropayments to unlock content. Everything is recorded on the AIN blockchain."
 
-**Show (terminal commands):**
+**Show:**
 ```bash
-# The SDK powering everything
-npm view @ainblockchain/ain-js version  # → 1.14.1
+tree -L 1 /home/comcom/git/papers-with-claudecode/
+```
 
-# The knowledge graph builder pipeline
-ls knowledge-graph-builder/  # repo → courses in one command
+**Highlight:**
+- `frontend/` — the main learner app (what we'll demo today)
+- `ain-js/` — blockchain SDK powering all on-chain operations
+- `cogito/` — autonomous enrichment engine (reads papers, generates courses)
+- `base-bounty/` — Cogito Node dashboard (agent economics, knowledge graph viz)
+- `ainblockchain-integration/debug-frontend/` — developer debug tools
+- `knowledge-graph-builder/` — pipeline from repos to courses
+- `claudecode-kubernetes/` — K8s infrastructure for real terminals
 
-# The Cogito enrichment engine
-ls cogito/  # watches chain, discovers papers, generates content
+---
 
-# The learner frontend
-ls frontend/  # 2D village, dungeon stages, Claude terminal
+## Act 2: Landing Page (1 min)
+
+### Screen: Browser → `http://localhost:3000`
+
+**Narration:**
+"This is the landing page. It shows what the platform does and invites users to explore papers or build courses."
+
+**Show:**
+1. **Hero section**: "Learn Any Research Paper with AI" headline with gradient text
+2. **Animated terminal mockup** showing course generation:
+   ```
+   $ papers generate
+   ? arXiv URL › https://arxiv.org/abs/1706.03762
+   ◆ Fetching paper content…
+   ◆ Analysing with Claude Code…
+   ◆ Building 5 learning stages…
+   ✓ Course pushed to GitHub
+   ```
+3. **Feature cards**: Explore Papers, Course Builder, Village, Dashboard
+4. **How It Works**: Find a Paper → Generate a Course → Learn Together
+5. **CTA buttons**: "Explore Papers" and "Build a Course"
+
+---
+
+## Act 3: Authentication (1.5 min)
+
+### Screen: Browser → `/login`
+
+**Narration:**
+"Authentication is two steps: GitHub for identity, then a passkey that creates an AIN blockchain wallet — no seed phrases needed."
+
+**Step 1: GitHub OAuth**
+
+**Show:**
+1. Claude Mark logo + "Papers with Claude Code" heading
+2. Step indicator: **1. GitHub** (active) → 2. Passkey (inactive)
+3. Click **"Sign in with GitHub"**
+4. GitHub OAuth redirect and consent screen
+5. Return to login page — step 1 now shows a checkmark
+
+**Step 2: Passkey / AIN Wallet**
+
+**Show:**
+1. Step indicator: 1. GitHub ✓ → **2. Passkey** (active)
+2. User info display: avatar, username, email from GitHub
+3. Heading: "Set up your AIN Wallet"
+4. Click **"Register Passkey"** → browser WebAuthn prompt (fingerprint/face/security key)
+5. After registration: wallet address created, redirect to `/explore`
+
+**Narration:**
+"The passkey doubles as a blockchain wallet. No MetaMask, no seed phrases — just your fingerprint. This address is used for all on-chain operations: recording progress, making payments, building the knowledge graph."
+
+---
+
+## Act 4: Explore Trending Papers (1.5 min)
+
+### Screen: Browser → `/explore`
+
+**Narration:**
+"The Explore page shows trending AI research papers — think HuggingFace Papers meets interactive learning."
+
+**Show:**
+1. **Header bar** with navigation: Explore, Dashboard, Village, Course Builder
+2. **Search bar** and **period filter** (Daily / Weekly / Monthly)
+3. **Paper cards** — each showing:
+   - Thumbnail with organization badge
+   - Paper title and 2-line description
+   - Author avatars and published date
+   - **"Learn" button** (orange) if you own the course
+   - **"Purchase" button** (purple) if you need to buy it
+   - GitHub button with star count
+   - arXiv Page link
+
+**Steps:**
+1. Scroll through the paper list — point out well-known papers (Transformer, BERT, GPT-3, etc.)
+2. Click **period filter** to switch between Daily / Weekly / Monthly trending
+3. Hover over a paper card to show the interactive elements
+4. Click **"Learn"** on "Attention Is All You Need" to enter the course
+
+---
+
+## Act 5: Learning — The Dungeon (3 min)
+
+### Screen: Browser → `/learn/attention-is-all-you-need`
+
+**Narration:**
+"This is the core experience: a 60/40 split screen. Left side is a 2D dungeon canvas. Right side is the Claude Code terminal — your AI tutor."
+
+### Left Panel (60%): Course Canvas
+
+**Show:**
+1. **Stage Progress Bar** across the top — shows current stage and total stages
+2. **2D tile-based room**: tan/beige floor with checkerboard pattern, gray walls
+3. **Player character** at starting position
+4. **Concept markers** scattered around the room (colored circles)
+5. **Door** on the right wall (locked, gray)
+
+**Steps:**
+1. Move the player with **arrow keys / WASD** — show fluid movement
+2. Walk near a **concept marker** → press **E** to interact
+3. **Concept Overlay** appears: shows the concept title and explanation (e.g., "Scaled Dot-Product Attention")
+4. Close the overlay, walk to the next concept
+5. After viewing concepts, approach the **door** on the right wall
+6. Press **E** at the door → triggers the **Quiz Overlay**
+
+### Quiz
+
+**Show:**
+1. **Quiz modal**: "Stage Quiz" heading
+2. Multiple-choice question about the stage concepts
+3. Four options (A, B, C, D) as buttons
+4. Select an answer → click **"Submit Answer"**
+5. **Correct**: green highlight + checkmark → "Correct! Proceeding to unlock the door..."
+6. **Incorrect**: red highlight + X → click **"Try Again"**
+
+**Narration:**
+"The quiz tests what you learned from the concepts in this room. Get it right, and the door unlocks."
+
+### Right Panel (40%): Claude Terminal
+
+**Show:**
+1. **Terminal header**: traffic light circles + "Claude Code — {Stage Title}"
+2. **System message**: stage introduction text (gray, italic)
+3. **Chat input**: green `>` prompt with "Ask about the concepts..." placeholder
+4. Type a question → Claude responds with explanation
+5. After quiz pass, terminal shows: "Great job! You passed Stage 1 with a score of 85/100!"
+
+### Payment — Unlocking the Next Stage
+
+**Show:**
+1. After quiz pass, the **Payment Modal** appears:
+   - Lock icon
+   - "Unlock Stage 2"
+   - Payment amount: **0.001 USDT** in dark box
+2. Click **"Unlock"**
+3. Progress states: "Signing..." → "Submitting to Kite Chain..." → "Confirming..."
+4. **Success**: Unlock icon (green) + "Stage Unlocked!"
+   - Tx hash displayed (truncated, monospace)
+   - **KiteScan link** to view the transaction
+5. Click **"Continue"** → enter the next stage room
+
+**Narration:**
+"Each stage unlock is an x402 micropayment on Kite Chain — 0.001 USDT. The transaction is verifiable on-chain. This is how course creators earn from their content."
+
+### Terminal Payment Messages
+
+**Show the Claude terminal updating in real-time:**
+```
+> I'm unlocking Stage 2 for you now...
+> Stage 2 unlocked! Payment: 0.001 KITE
+> Tx: 0xa3f7...8b2c (View on KiteScan)
+> Your progress has been recorded on-chain.
+```
+
+---
+
+## Act 6: Course Completion (1 min)
+
+### Screen: Browser → `/learn/...` (final stage complete)
+
+**Narration:**
+"After clearing all stages, you see the completion screen."
+
+**Show:**
+1. **Left panel (60%)**: Course Complete screen
+   - Trophy icon
+   - **"Course Complete!"** heading
+   - Stage count: "5/5 stages cleared — 100%"
+   - AIN Wallet address with fingerprint icon
+   - Buttons: **"Dashboard"** and **"Explore More"**
+2. **Right panel (40%)**: Claude terminal continues — can still ask questions
+
+**Steps:**
+1. Show the completion celebration
+2. Point out the wallet address (this is where progress is recorded on-chain)
+3. Click **"Explore More"** to return to the paper list, OR click **"Dashboard"**
+
+---
+
+## Act 7: The Village (2 min)
+
+### Screen: Browser → `/village`
+
+**Narration:**
+"The Village is the social hub — a 2D map where you can see other learners, check the leaderboard, and enter courses from building entrances."
+
+### Left Panel: Village Canvas (full width minus sidebar)
+
+**Show:**
+1. **Procedurally generated village map**: grass tiles, paths, buildings
+2. **Player character** (blue) — walk around with WASD/arrows
+3. **Buildings** labeled with paper/course titles, color-coded by category
+4. **Friend avatars** scattered on the map (different colors)
+5. Walk to a **building entrance** → press **E** to enter the course
+
+### Right Sidebar (280px)
+
+**Show:**
+1. **Online Friends** section
+   - Friend list with colored avatars
+   - Online status (green dot)
+   - Location: "Stage 3" or "In village"
+2. **Leaderboard** section
+   - Top 10 users ranked by stages cleared
+   - Gold/Silver/Bronze badges for top 3
+   - Current progress: "{Paper Title} St.{Stage}"
+3. **Community** link → Knowledge Graph & Frontier
+4. **World Map** mini-map with player position dot
+
+**Steps:**
+1. Walk the player around the village — show buildings for different courses
+2. Approach a building and press **E** to enter (or show purchase modal if not owned)
+3. Point out friends and their locations on the map
+4. Scroll the leaderboard to show rankings
+
+**Narration:**
+"The village makes learning social. You can see who's online, what they're studying, and compete on the leaderboard. Each building is a course — walk in to start learning."
+
+---
+
+## Act 8: Dashboard (1 min)
+
+### Screen: Browser → `/dashboard`
+
+**Narration:**
+"The Dashboard is your personal learning profile."
+
+**Show:**
+1. **Profile section**: avatar, username, email, AIN wallet address with fingerprint icon
+2. **Stats grid** (3 cards):
+   - **Papers Started**: count with book icon
+   - **Stages Cleared**: count with trophy icon
+   - **Current Streak**: "1 day" with flame icon
+3. **Active Courses** section:
+   - Course cards with progress bars: "Stage 3/5"
+   - **"Continue"** button (orange) to resume learning
+
+**Steps:**
+1. Show the overall stats
+2. Click **"Continue"** on an active course → navigates back to `/learn/{paperId}`
+3. If no courses: show the "No courses started yet" state with "Explore Papers" CTA
+
+---
+
+## Act 9: Behind the Scenes — Cogito Node (1.5 min)
+
+### Screen: Browser → `base-bounty/web` (Cogito Node Dashboard)
+
+**Narration:**
+"Behind the learner experience is the Cogito Node — an autonomous AI agent that reads papers, builds knowledge, and earns revenue through x402 micropayments."
+
+**Show:**
+1. **Overview page**: 8 bounty requirement cards with green checkmarks
+2. **Agent Identity**: ERC-8004 registered on Base mainnet (Agent ID badge)
+3. **Knowledge Graph** (`/graph`): force-directed visualization of all explored topics
+4. **Economics** (`/economics`): wallet balances (ETH, USDC), daily costs vs revenue, sustainability ratio
+5. **Agent Chat Box** (floating widget, bottom-right): live SSE stream showing the agent's thinking cycle
+
+**Narration:**
+"The Cogito Node is self-sustaining. It reads arXiv papers, synthesizes knowledge, writes it to the AIN blockchain, and sells access through x402 payments. Every transaction includes ERC-8021 builder attribution — tracing back to the original paper authors."
+
+---
+
+## Act 10: Debug Tools (1 min)
+
+### Screen: Browser → Debug Frontend (`ainblockchain-integration/debug-frontend`)
+
+**Narration:**
+"For developers, we have the debug dashboard — direct access to on-chain state."
+
+**Show (quick tour):**
+1. **Quick Actions**: Setup App, Seed 7 Samples, Check Balance
+2. **Debug Inspector → Raw State**: click `graph/nodes` → getValue → raw JSON of all knowledge graph nodes
+3. **Debug Inspector → Rule Evaluator**: test ALLOWED vs DENIED permissions
+4. **Explorations**: browse explorations with Genesis Owner preset
+
+---
+
+## Act 11: The Full Stack (1 min)
+
+### Screen: Terminal
+
+**Narration:**
+"Here's how it all fits together."
+
+**Show:**
+```bash
+# The blockchain SDK (published on npm)
+npm view @ainblockchain/ain-js version
+
+# The knowledge graph builder — repos to courses
+ls knowledge-graph-builder/
+
+# Cogito — autonomous enrichment engine
+ls cogito/
+
+# Kubernetes infrastructure — real terminals per learner
+ls claudecode-kubernetes/
+
+# The main frontend (what we demoed)
+ls frontend/
 ```
 
 **Narration:**
-"ain-js talks to the blockchain. The knowledge graph builder extracts concepts from repos. Cogito watches for new entries, discovers papers on arXiv, fetches source code from GitHub, generates educational content with a local LLM, and publishes it back with x402 pricing. The frontend gives learners a gamified experience — a 2D village with dungeon stages and quizzes, powered by Claude."
+"ain-js talks to the AIN blockchain. The knowledge graph builder turns GitHub repos into structured courses. Cogito watches for new entries, discovers papers on arXiv, generates educational content with Claude, and publishes it with x402 pricing. The Kubernetes layer gives each learner a real terminal pod. And the frontend brings it all together — explore, learn, pay, compete."
 
 ---
 
 ## Closing
 
-### Screen: Browser → Debug Dashboard overview
+### Screen: Browser → Landing Page (`/`)
 
 **Narration:**
-"Papers with Claude Code turns the collective knowledge of academic papers into an interactive, incentivized learning platform — all verifiable on-chain. The debug dashboard you saw today is how we build and inspect that knowledge graph. Thank you."
+"Papers with Claude Code turns the collective knowledge of academic research into an interactive, incentivized learning platform. Learners explore a village, enter dungeon-style courses, interact with an AI tutor, and pay creators through blockchain micropayments — all verifiable on-chain. Thank you."
 
 ---
 
 ## Quick Reference: What to Click
 
-| Time | Section | Action | What It Shows |
-|------|---------|--------|---------------|
-| 2:00 | Auth & Wallet | Sign in, show config | Devnet connection, accounts, balance |
-| 3:00 | Quick Actions | Check Balance | Wallet address + 1M AIN |
-| 4:00 | Topics | Fetch | 33-topic hierarchy |
-| 4:30 | Knowledge Graph | Fetch Graph | 150 nodes from genesis papers |
-| 5:30 | Explore | Click "Multi-Head Attention" preset | Auto-fill with parent entry |
-| 6:00 | Explore | Submit | On-chain entry + graph edge |
-| 7:00 | Quick Actions | Seed 7 Samples | Progress bar, 7 entries created |
-| 8:30 | Explorations | Click "Genesis Owner" | Browse exploration cards |
-| 9:30 | Frontier | All Topics → Fetch | Progress bars per topic |
-| 10:00 | Debug Inspector | Raw State → graph/nodes → getValue | Raw on-chain JSON |
-| 11:00 | Debug Inspector | Rule Evaluator → ALLOWED/DENIED | Permission testing |
-| 12:00 | Access (x402) | Pick GPT-3 → Request Access | Payment gating |
-| 12:30 | Publish | Transformer Fundamentals preset | Publish gated course |
-| 13:00 | Learner Progress | Genesis Owner → Lookup | Full learning journey |
-| 14:00 | Terminal | Show repo structure | Full stack overview |
+| Time  | Screen | Action | What It Shows |
+|-------|--------|--------|---------------|
+| 0:00  | Terminal | `tree -L 1` | Project structure overview |
+| 1:30  | `/` Landing | Scroll through | Hero, features, how-it-works |
+| 2:30  | `/login` | Sign in with GitHub | OAuth redirect + return |
+| 3:00  | `/login` | Register Passkey | WebAuthn prompt, wallet created |
+| 4:00  | `/explore` | Browse papers | Trending list, filters, paper cards |
+| 5:00  | `/explore` | Click "Learn" | Enter course |
+| 5:30  | `/learn/...` | Move player (WASD) | 2D dungeon room, concept markers |
+| 6:00  | `/learn/...` | Press E on concept | Concept overlay with explanation |
+| 6:30  | `/learn/...` | Press E at door → Quiz | Multiple choice, submit answer |
+| 7:00  | `/learn/...` | Quiz pass → Payment | Unlock Stage 2 — 0.001 USDT on Kite |
+| 7:30  | `/learn/...` | Payment confirms | Tx hash + KiteScan link |
+| 8:00  | `/learn/...` | Claude Terminal | Ask questions, see stage intro |
+| 8:30  | `/learn/...` | Complete all stages | Trophy screen, 100% completion |
+| 9:30  | `/village` | Walk around | Buildings, friends, entrances |
+| 10:00 | `/village` | Check sidebar | Leaderboard, online friends |
+| 10:30 | `/village` | Enter building (E) | Navigate to course or purchase |
+| 11:00 | `/dashboard` | View profile | Stats, active courses, streak |
+| 11:30 | Cogito Node | Overview page | Agent identity, bounty checklist |
+| 12:00 | Cogito Node | `/graph` | Force-directed knowledge graph |
+| 12:30 | Cogito Node | `/economics` | Revenue, costs, sustainability |
+| 13:00 | Debug Frontend | Quick Actions + Inspector | Raw blockchain state, permissions |
+| 14:00 | Terminal | Show stack | Full architecture overview |
