@@ -530,10 +530,19 @@ node -e "
   const fs = require('fs');
   const pk = fs.readFileSync('blockchain/.env','utf-8').match(/AIN_PRIVATE_KEY=(.+)/)[1].trim();
   ain.wallet.addAndSetDefaultAccount(pk);
-  ain.knowledge.getExplorationsByUser(ain.wallet.defaultAddress).then(r => console.log(JSON.stringify(r, null, 2)));
+  ain.knowledge.getExplorationsByUser(ain.wallet.defaultAccount.address).then(r => {
+    // Result shape: { 'topic|concept': { entryId: { topic_path, title, ... } } }
+    const allEntries = [];
+    Object.values(r || {}).forEach(bucket => {
+      Object.values(bucket).forEach(entry => allEntries.push(entry));
+    });
+    const mine = allEntries.filter(e => e.topic_path && e.topic_path.startsWith(cfg.topic_prefix));
+    console.log(JSON.stringify(mine, null, 2));
+  });
 "
 ```
-Filter results by `topic_path` starting with `cfg.topic_prefix` to find completed concepts for this course.
+The result is a nested object: outer keys are `topic|concept`, inner keys are entry IDs, values are the entry objects.
+Filter by `topic_path` starting with `cfg.topic_prefix` to find completed concepts for this course.
 Reverse-map each `topic_path` against `topic_map` to get the completed `concept_id` list.
 
 ### Look up a friend's progress
