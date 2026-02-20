@@ -15,7 +15,7 @@ const navItems = [
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/village', label: 'Village', icon: Map },
-  { href: '/publish', label: 'Course Builder', icon: Hammer },
+  { href: '/builder', label: 'Course Builder', icon: Hammer },
 ];
 
 export function Header() {

@@ -90,7 +90,7 @@ const FEATURES = [
     icon: Hammer,
     title: 'Course Builder',
     desc: 'Point Claude Code at any arXiv URL, GitHub repo, or HuggingFace model — get an interactive course in minutes.',
-    href: '/publish',
+    href: '/builder',
     color: '#FF9D00',
     gradient: 'from-[#FF9D00]/20 to-[#FF9D00]/0',
   },
@@ -171,7 +171,7 @@ export default function LandingPage() {
         <div className="hidden md:flex items-center gap-7 text-sm text-gray-400">
           {[
             { href: '/explore', label: 'Explore' },
-            { href: '/publish', label: 'Build' },
+            { href: '/builder', label: 'Build' },
             { href: '/village', label: 'Village' },
           ].map(({ href, label }) => (
             <Link
@@ -237,7 +237,7 @@ export default function LandingPage() {
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
           </Link>
           <Link
-            href="/publish"
+            href="/builder"
             className="flex items-center gap-2 px-7 py-3.5 bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 rounded-xl font-semibold text-sm transition-all hover:scale-[1.02]"
           >
             <Terminal className="h-4 w-4" />
@@ -447,7 +447,7 @@ export default function LandingPage() {
           <div className="flex gap-6">
             {[
               { href: '/explore', label: 'Explore' },
-              { href: '/publish', label: 'Build' },
+              { href: '/builder', label: 'Build' },
               { href: '/village', label: 'Village' },
               { href: '/dashboard', label: 'Dashboard' },
             ].map(({ href, label }) => (
