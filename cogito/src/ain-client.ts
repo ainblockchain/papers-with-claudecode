@@ -6,22 +6,19 @@
 import AinModule from '@ainblockchain/ain-js';
 import { EnrichedContent } from './types.js';
 
-// ain-js uses `export default class Ain` from CommonJS
-const Ain = AinModule as unknown as typeof AinModule.default extends undefined
-  ? typeof AinModule
-  : typeof AinModule.default;
-
-type AinInstance = InstanceType<typeof Ain>;
+// ESM/CJS interop: ain-js is CJS with `module.exports = class Ain`.
+// In Node ESM, the default import is `{ default: Ain }`, not Ain directly.
+const Ain: any = (AinModule as any).default ?? AinModule;
 
 export class AinClient {
-  private ain: AinInstance;
+  private ain: any;
   private address: string = '';
 
   constructor(
     private providerUrl: string,
     private privateKey: string,
   ) {
-    this.ain = new (Ain as any)(providerUrl);
+    this.ain = new Ain(providerUrl);
   }
 
   async init(): Promise<void> {
