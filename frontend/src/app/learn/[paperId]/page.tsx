@@ -23,6 +23,7 @@ import { MOCK_STAGES_BITDANCE } from '@/constants/mock-stages';
 import { trackEvent } from '@/lib/ain/event-tracker';
 
 const TERMINAL_API_URL = process.env.NEXT_PUBLIC_TERMINAL_API_URL;
+const API_PROXY = '/api/terminal';
 
 export default function LearnPage() {
   const params = useParams();
@@ -69,11 +70,11 @@ export default function LearnPage() {
   useEffect(() => {
     const cleanupOnClose = () => {
       const sid = sessionCleanupRef.current;
-      if (sid && TERMINAL_API_URL) {
-        const url = `${TERMINAL_API_URL}/api/sessions/${sid}`;
+      if (sid) {
+        const url = `${API_PROXY}/sessions/${sid}`;
         // Try sendBeacon first (most reliable for page unload), then fetch keepalive
         const beaconSent = navigator.sendBeacon(
-          `${TERMINAL_API_URL}/api/sessions/${sid}/delete`,
+          `${API_PROXY}/sessions/${sid}/delete`,
           '',
         );
         if (!beaconSent) {
