@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, FileText, Play, ShoppingCart } from 'lucide-react';
+import { Star, FileText, Play, ShoppingCart, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Paper } from '@/types/paper';
@@ -35,9 +35,14 @@ export function PaperCard({ paper }: PaperCardProps) {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return null;
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return null;
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
+
+  const hasAuthors = paper.authors.length > 0;
+  const formattedDate = formatDate(paper.publishedAt);
 
   return (
     <article className="flex gap-4 py-5 border-t border-[#E5E7EB] first:border-t-0">
@@ -73,23 +78,36 @@ export function PaperCard({ paper }: PaperCardProps) {
         </Link>
         <p className="mt-1.5 text-sm text-[#6B7280] line-clamp-2">{paper.description}</p>
         <div className="mt-auto pt-3 flex items-center gap-2 text-sm text-[#6B7280]">
-          <div className="flex items-center gap-1">
-            {paper.authors.slice(0, 3).map((author) => (
-              <div
-                key={author.id}
-                className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-[9px] font-medium text-white"
-                title={author.name}
-              >
-                {author.name[0]}
+          {hasAuthors && (
+            <>
+              <div className="flex items-center gap-1">
+                {paper.authors.slice(0, 3).map((author) => (
+                  <div
+                    key={author.id}
+                    className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center text-[9px] font-medium text-white"
+                    title={author.name}
+                  >
+                    {author.name[0]}
+                  </div>
+                ))}
+                {paper.authors.length > 3 && (
+                  <span className="text-xs">+{paper.authors.length - 3}</span>
+                )}
+                <span className="ml-1 text-xs">{paper.authors.length} authors</span>
               </div>
-            ))}
-            {paper.authors.length > 3 && (
-              <span className="text-xs">+{paper.authors.length - 3}</span>
-            )}
-            <span className="ml-1 text-xs">{paper.authors.length} authors</span>
+              <span className="text-xs">·</span>
+            </>
+          )}
+          {formattedDate && (
+            <>
+              <span className="text-xs">Published on {formattedDate}</span>
+              <span className="text-xs">·</span>
+            </>
+          )}
+          <div className="flex items-center gap-1 text-xs">
+            <BookOpen className="h-3 w-3" />
+            {paper.totalStages} stages
           </div>
-          <span className="text-xs">·</span>
-          <span className="text-xs">Published on {formatDate(paper.publishedAt)}</span>
         </div>
       </div>
 
@@ -125,12 +143,14 @@ export function PaperCard({ paper }: PaperCardProps) {
             </Button>
           </a>
         )}
-        <a href={paper.arxivUrl} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm" className="w-full text-xs h-8">
-            <FileText className="h-3 w-3 mr-1" />
-            arXiv Page
-          </Button>
-        </a>
+        {paper.arxivUrl && (
+          <a href={paper.arxivUrl} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="sm" className="w-full text-xs h-8">
+              <FileText className="h-3 w-3 mr-1" />
+              arXiv Page
+            </Button>
+          </a>
+        )}
       </div>
     </article>
   );

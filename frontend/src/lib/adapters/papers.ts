@@ -1,31 +1,44 @@
-// 🔌 ADAPTER — Replace mock with real API when backend is ready
+// 🔌 ADAPTER — Fetches courses from BFF API routes backed by GitHub
 import { Paper } from '@/types/paper';
-import { MOCK_PAPERS } from '@/constants/mock-papers';
 
 export interface PapersAdapter {
   fetchTrendingPapers(period: 'daily' | 'weekly' | 'monthly'): Promise<Paper[]>;
   searchPapers(query: string): Promise<Paper[]>;
   getPaperById(id: string): Promise<Paper | null>;
-  /** Synchronous lookup (mock only — returns null if data isn't cached) */
-  getPaperByIdSync?(id: string): Paper | null;
 }
 
-class MockPapersAdapter implements PapersAdapter {
+class ApiPapersAdapter implements PapersAdapter {
+  private cache: Paper[] | null = null;
+
   async fetchTrendingPapers(): Promise<Paper[]> {
-    return MOCK_PAPERS;
+    if (this.cache) return this.cache;
+    try {
+      const res = await fetch('/api/courses');
+      if (!res.ok) throw new Error('Failed to fetch courses');
+      const papers: Paper[] = await res.json();
+      this.cache = papers;
+      return papers;
+    } catch (error) {
+      console.warn('[PapersAdapter] Failed to fetch from API, returning empty list:', error);
+      return [];
+    }
   }
+
   async searchPapers(query: string): Promise<Paper[]> {
-    return MOCK_PAPERS.filter(p =>
-      p.title.toLowerCase().includes(query.toLowerCase()) ||
-      p.description.toLowerCase().includes(query.toLowerCase())
+    const papers = await this.fetchTrendingPapers();
+    const q = query.toLowerCase();
+    return papers.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.authors.some((a) => a.name.toLowerCase().includes(q)),
     );
   }
+
   async getPaperById(id: string): Promise<Paper | null> {
-    return MOCK_PAPERS.find(p => p.id === id) ?? null;
-  }
-  getPaperByIdSync(id: string): Paper | null {
-    return MOCK_PAPERS.find(p => p.id === id) ?? null;
+    const papers = await this.fetchTrendingPapers();
+    return papers.find((p) => p.id === id) ?? null;
   }
 }
 
-export const papersAdapter: PapersAdapter = new MockPapersAdapter();
+export const papersAdapter: PapersAdapter = new ApiPapersAdapter();

@@ -129,15 +129,9 @@ export function VillageCanvas() {
               router.push(`/learn/${paperId}`);
             } else {
               // Not purchased — open purchase modal
-              const paper = papersAdapter.getPaperByIdSync?.(paperId);
-              if (paper) {
-                setPurchaseModal(paperId, paper);
-              } else {
-                // Fallback: fetch async
-                papersAdapter.getPaperById(paperId).then((p) => {
-                  if (p) setPurchaseModal(paperId, p);
-                });
-              }
+              papersAdapter.getPaperById(paperId).then((p) => {
+                if (p) setPurchaseModal(paperId, p);
+              });
             }
           }
           return;

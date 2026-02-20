@@ -3,7 +3,7 @@ import { NextResponse } from "next/server"
 
 // Only these routes are accessible without login
 const PUBLIC_EXACT = ["/"]
-const PUBLIC_PREFIX = ["/login", "/api/auth", "/explore"]
+const PUBLIC_PREFIX = ["/login", "/api/auth", "/api/courses", "/explore"]
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
