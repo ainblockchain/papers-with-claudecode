@@ -147,7 +147,7 @@ export async function getRecentTransactions(address: string, limit = 50): Promis
   const BLOCKSCOUT_URL = process.env.NEXT_PUBLIC_BLOCKSCOUT_URL || 'https://base.blockscout.com';
 
   try {
-    const res = await fetch(`${BLOCKSCOUT_URL}/api/v2/addresses/${address}/transactions?limit=${limit}`);
+    const res = await fetch(`${BLOCKSCOUT_URL}/api/v2/addresses/${address}/transactions`);
     const json = await res.json();
     const items = json.items || [];
 
