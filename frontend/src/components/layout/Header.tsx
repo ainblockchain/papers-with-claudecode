@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut as nextAuthSignOut } from 'next-auth/react';
-import { Compass, LayoutDashboard, Map, Upload, Github, Menu, X, LogOut, Fingerprint } from 'lucide-react';
+import { Compass, LayoutDashboard, Map, Hammer, Github, Menu, X, LogOut, Fingerprint } from 'lucide-react';
 import { ClaudeMark } from '@/components/shared/ClaudeMark';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -15,7 +15,7 @@ const navItems = [
   { href: '/explore', label: 'Explore', icon: Compass },
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/village', label: 'Village', icon: Map },
-  { href: '/publish', label: 'Publish', icon: Upload },
+  { href: '/publish', label: 'Course Builder', icon: Hammer },
 ];
 
 export function Header() {

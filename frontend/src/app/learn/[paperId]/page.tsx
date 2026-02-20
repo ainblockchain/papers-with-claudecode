@@ -150,7 +150,7 @@ export default function LearnPage() {
           // Use AIN wallet address as userId (recommended by integration doc)
           const walletAddress = useAuthStore.getState().passkeyInfo?.ainAddress;
           const session = await terminalSessionAdapter.createSession({
-            repoUrl: paper.githubUrl,
+            courseUrl: paper.githubUrl,
             userId: walletAddress || user?.id,
           });
 

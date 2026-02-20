@@ -2,18 +2,23 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_TERMINAL_API_URL || 'http://<PUBLIC_IP>:31000';
 
+export type SessionMode = 'learner' | 'generator';
+
 export interface SessionCreateRequest {
-  repoUrl?: string;
+  courseUrl?: string;
   userId?: string;
   resumeStage?: number;
+  mode?: SessionMode;
 }
 
 export interface SessionInfo {
   sessionId: string;
   podName: string;
   status: 'creating' | 'running' | 'terminating' | 'terminated';
-  repoUrl?: string;
+  courseUrl?: string;
+  courseId?: string;
   userId?: string;
+  mode?: SessionMode;
 }
 
 export interface BackendProgress {
