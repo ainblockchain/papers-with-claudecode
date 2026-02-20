@@ -44,7 +44,11 @@ async function recordViaApi(lesson) {
 async function recordViaAinJs(lesson) {
   // Try to use ain-js directly if available
   try {
-    const AinModule = await import('@ainblockchain/ain-js');
+    const path = require('path');
+    // Resolve ain-js from the cogito directory where it's installed
+    const cogitoDir = path.resolve(__dirname, '..', '..', '..', '..', 'cogito');
+    const ainJsPath = require.resolve('@ainblockchain/ain-js', { paths: [cogitoDir] });
+    const AinModule = require(ainJsPath);
     const Ain = AinModule.default || AinModule;
 
     const providerUrl = process.env.AIN_PROVIDER_URL || 'https://devnet-api.ainetwork.ai';
@@ -74,7 +78,7 @@ async function recordViaAinJs(lesson) {
       content: lesson.content,
       summary: lesson.summary || lesson.content.slice(0, 200),
       depth: 2,
-      tags: ['lesson_learned', ...tags].join(','),
+      tags: [...new Set(['lesson_learned', ...tags])].join(','),
     });
 
     return { success: true, entryId: result.entryId, method: 'ain-js' };
