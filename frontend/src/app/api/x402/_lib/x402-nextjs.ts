@@ -57,7 +57,8 @@ const BASE_USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 
 // ── Exported helpers ──
 
-const payTo = MERCHANT_WALLET_ADDRESS || process.env.KITE_MERCHANT_WALLET || '';
+const kitePayTo = MERCHANT_WALLET_ADDRESS || process.env.KITE_MERCHANT_WALLET || '';
+const basePayTo = process.env.BASE_MERCHANT_ADDRESS || kitePayTo;
 
 export function getServerForChain(chain: string): x402ResourceServer {
   return chain === 'base' ? baseServer : kiteServer;
@@ -86,7 +87,7 @@ export function buildKiteRouteConfig(overrides?: {
     accepts: {
       scheme: 'exact',
       network: KITE_NETWORK,
-      payTo,
+      payTo: kitePayTo,
       price: defaultPrice,
       maxTimeoutSeconds: 300,
     },
@@ -108,7 +109,7 @@ export function buildBaseRouteConfig(overrides?: {
     accepts: {
       scheme: 'exact',
       network: BASE_NETWORK,
-      payTo,
+      payTo: basePayTo,
       price: {
         amount: process.env.BASE_X402_PRICE_AMOUNT || '1000',
         asset: BASE_USDC,
