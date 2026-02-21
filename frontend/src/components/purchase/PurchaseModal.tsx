@@ -70,6 +70,7 @@ export function PurchaseModal() {
           {isSuccess ? (
             <>
               <h3 className="font-bold text-lg text-white">Course Purchased!</h3>
+              <p className="mt-1 text-xs text-gray-500 font-mono">settled via x402</p>
               <p className="mt-2 text-sm text-gray-400 line-clamp-2">
                 {purchaseModalPaper.title}
               </p>
@@ -88,6 +89,10 @@ export function PurchaseModal() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Protocol</span>
+                    <span className="text-xs text-green-400 font-mono">x402</span>
+                  </div>
+                  <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Status</span>
                     <span className="text-xs text-green-400">Confirmed</span>
                   </div>
@@ -97,6 +102,7 @@ export function PurchaseModal() {
           ) : (
             <>
               <h3 className="font-bold text-lg text-white">Purchase Course</h3>
+              <p className="mt-1 text-xs text-gray-500 font-mono">via x402 protocol</p>
               <p className="mt-2 text-sm text-gray-400 line-clamp-2">
                 {purchaseModalPaper.title}
               </p>
@@ -113,7 +119,7 @@ export function PurchaseModal() {
               </div>
 
               <div className="mt-3 p-3 bg-[#16162a] rounded-lg">
-                <p className="text-xs text-gray-500">Payment via {chainConfig.name}</p>
+                <p className="text-xs text-gray-500">x402 Payment via {chainConfig.name}</p>
                 <p className="text-lg font-bold text-white">
                   {formatChainAmount(selectedChain, 'coursePurchase')}
                 </p>
