@@ -141,6 +141,27 @@ Knowledge module, x402 payments, LLM integration, and Cogito module (v1.13.3 →
 - [`59bd333`](https://github.com/ainblockchain/ain-js/commit/59bd3332ad24b8bc57835ccddba7f792dcfefa71) Fix: serialize recipe arrays to CSV for AIN state DB compatibility
 - [`b93a9be`](https://github.com/ainblockchain/ain-js/commit/b93a9be73848e5a35ca4136cc6661873d584cabb) Bump version to 1.15.0
 
+### [ainblockchain/ain-blockchain](https://github.com/ainblockchain/ain-blockchain) — AIN Blockchain Node
+
+Knowledge graph indexing, P256 multi-curve support, Cogito Node with LLM engine, and Docker deployment:
+
+- [`c460a08e`](https://github.com/ainblockchain/ain-blockchain/commit/c460a08e0dcdb1ee4e9eb4d8d6e57e682990d29b) Add knowledge graph index with Neo4j/memory backends and JSON-RPC read APIs
+- [`2d8610bc`](https://github.com/ainblockchain/ain-blockchain/commit/2d8610bc42a34354743a3bba4df3c6965197ce94) Add P256 signature verification support for multi-curve transactions
+- [`ab184c5a`](https://github.com/ainblockchain/ain-blockchain/commit/ab184c5a32eb12d28d416c2a0b5663eacc12567c) Upgrade dependencies and fix secp256k1 native module for Node.js 20
+- [`65e828c9`](https://github.com/ainblockchain/ain-blockchain/commit/65e828c9fb27e698d84a6af52c00bfffb1a76464) Remove hardcoded Neo4j credentials from node_params.json defaults
+- [`502a9901`](https://github.com/ainblockchain/ain-blockchain/commit/502a9901ae6bf8f1b8d937f571fe6bc3403a06d2) Dockerize ain-blockchain with Neo4j knowledge graph support
+- [`892c68df`](https://github.com/ainblockchain/ain-blockchain/commit/892c68dfeaeb784cd7a64ce72f302c24c3795fc3) Add LLM engine integration for Cogito Node
+- [`3fe3c864`](https://github.com/ainblockchain/ain-blockchain/commit/3fe3c8640e494bfdf34b0be88a9eb19df8c5b034) Dockerize Cogito Node with Neo4j persistence and LLM engine
+- [`cef194a3`](https://github.com/ainblockchain/ain-blockchain/commit/cef194a360782c76948cefbeb6c56af1d41c6559) Add LLM engine JSON-RPC tests to E2E test suite
+- [`a88b4ec1`](https://github.com/ainblockchain/ain-blockchain/commit/a88b4ec15d5bbd736d697fbf7847cb4c27875096) Fix Qwen3 think tag JSON parsing + add LLM unit tests (61 tests)
+- [`1043cfad`](https://github.com/ainblockchain/ain-blockchain/commit/1043cfadc8fa105cd2ce3707b9c2d786866c0aff) Expose LLM thinking process in explore/course/analyze responses
+- [`cc25ba48`](https://github.com/ainblockchain/ain-blockchain/commit/cc25ba48e51719430e8e67fe2bfccc9a445382e2) Add extractThinking tests + update analyze tests for thinking progress (53 tests)
+- [`2c42e062`](https://github.com/ainblockchain/ain-blockchain/commit/2c42e0629b6e914f6c6e7154e5c918ae3821a50d) Add container deployment module for CI/CD pipeline
+- [`bc16fb30`](https://github.com/ainblockchain/ain-blockchain/commit/bc16fb30c54f794775620a4eb58f29d59a2b601d) Add cogito container for recipe-driven knowledge enrichment
+- [`d18e5be6`](https://github.com/ainblockchain/ain-blockchain/commit/d18e5be69e2f46d7443b266b897ca1e2632cec1b) Fix: deserialize recipe arrays from AIN state CSV format
+- [`81e67cb9`](https://github.com/ainblockchain/ain-blockchain/commit/81e67cb9650921a974c24d88d27b9c3c130f437a) Upgrade ain-js to 1.15.0 (includes cogito module)
+- [`5ef79e52`](https://github.com/ainblockchain/ain-blockchain/commit/5ef79e521f0f9b1372b042520ba1e740d4c0bdef) Add AINscan explorer link to README
+
 ### [ainblockchain/ainscan](https://github.com/ainblockchain/ainscan) — Blockchain Explorer
 
 Built from scratch and deployed at [ainscan.ainetwork.ai](https://ainscan.ainetwork.ai) during ETHDenver 2026:
