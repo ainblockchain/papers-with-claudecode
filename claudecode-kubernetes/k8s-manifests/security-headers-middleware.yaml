@@ -1,0 +1,31 @@
+# Traefik middleware for security response headers + HTTP->HTTPS redirect
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: claudecode-terminal
+spec:
+  headers:
+    # HSTS: force HTTPS for 2 years
+    stsSeconds: 63072000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    # Prevent clickjacking
+    frameDeny: true
+    # Prevent MIME-type sniffing
+    contentTypeNosniff: true
+    # XSS filter
+    browserXssFilter: true
+    # Referrer policy
+    referrerPolicy: "strict-origin-when-cross-origin"
+---
+# HTTP -> HTTPS redirect
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: https-redirect
+  namespace: claudecode-terminal
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

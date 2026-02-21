@@ -1,0 +1,52 @@
+# Ingress for api.paperswithclaudecode.com with TLS (Let's Encrypt)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-terminal-ingress
+  namespace: claudecode-terminal
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Use security headers middleware
+    traefik.ingress.kubernetes.io/router.middlewares: claudecode-terminal-security-headers@kubernetescrd
+    # HTTPS only
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - api.paperswithclaudecode.com
+      secretName: api-tls-cert
+  rules:
+    - host: api.paperswithclaudecode.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-terminal-service
+                port:
+                  number: 80
+---
+# HTTP -> HTTPS redirect ingress (catches port 80 traffic)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-terminal-redirect
+  namespace: claudecode-terminal
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: claudecode-terminal-https-redirect@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: api.paperswithclaudecode.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-terminal-service
+                port:
+                  number: 80
