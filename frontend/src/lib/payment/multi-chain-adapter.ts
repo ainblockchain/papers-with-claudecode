@@ -113,52 +113,14 @@ class MultiChainPaymentAdapter {
     }
   }
 
-  // ── Base Sepolia: Course Purchase via /api/x402/enroll?chain=base ──
+  // ── Base Sepolia: Course Purchase via server-side proxy ──
   private async basePurchaseCourse(
     params: ChainPaymentParams
   ): Promise<PaymentResult> {
-    try {
-      const passkeyInfo = loadPasskeyInfo();
-      const res = await fetch('/api/x402/enroll?chain=base', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paperId: params.paperId,
-          passkeyPublicKey: passkeyInfo?.publicKey || '',
-        }),
-      });
-
-      if (res.status === 402) {
-        return {
-          success: false,
-          error: 'Payment required on Base Sepolia.',
-          errorCode: 'payment_required',
-        };
-      }
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        return {
-          success: false,
-          error: body?.message ?? `Request failed (${res.status})`,
-          errorCode: body?.error,
-        };
-      }
-
-      const data = await res.json();
-      return {
-        success: true,
-        receiptId: data.enrollment?.paperId,
-        txHash: data.txHash,
-        explorerUrl: data.explorerUrl,
-      };
-    } catch (err) {
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : 'Network error',
-        errorCode: 'network_error',
-      };
-    }
+    return this.baseProxyRequest('enroll', {
+      paperId: params.paperId,
+      passkeyPublicKey: loadPasskeyInfo()?.publicKey || '',
+    });
   }
 
   // ── Kite: Stage Unlock — delegates to existing x402Adapter ──
@@ -176,45 +138,45 @@ class MultiChainPaymentAdapter {
     });
   }
 
-  // ── Base Sepolia: Stage Unlock via /api/x402/unlock-stage?chain=base ──
+  // ── Base Sepolia: Stage Unlock via server-side proxy ──
   private async baseUnlockStage(
     params: ChainPaymentParams
   ): Promise<PaymentResult> {
+    return this.baseProxyRequest('unlock-stage', {
+      paperId: params.paperId,
+      stageId: params.stageId,
+      stageNum: params.stageNum ?? 0,
+      score: params.score ?? 0,
+      passkeyPublicKey: loadPasskeyInfo()?.publicKey || '',
+    });
+  }
+
+  // ── Base Sepolia: Shared proxy helper ──
+  private async baseProxyRequest(
+    action: 'enroll' | 'unlock-stage',
+    requestParams: Record<string, unknown>
+  ): Promise<PaymentResult> {
     try {
-      const passkeyInfo = loadPasskeyInfo();
-      const res = await fetch('/api/x402/unlock-stage?chain=base', {
+      const res = await fetch('/api/x402/base-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paperId: params.paperId,
-          stageId: params.stageId,
-          stageNum: params.stageNum ?? 0,
-          score: params.score ?? 0,
-          passkeyPublicKey: passkeyInfo?.publicKey || '',
-        }),
+        body: JSON.stringify({ action, ...requestParams }),
       });
-
-      if (res.status === 402) {
-        return {
-          success: false,
-          error: 'Payment required on Base Sepolia.',
-          errorCode: 'payment_required',
-        };
-      }
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
+        const errorMsg = body?.message ?? `Request failed (${res.status})`;
         return {
           success: false,
-          error: body?.message ?? `Request failed (${res.status})`,
-          errorCode: body?.error,
+          error: errorMsg,
+          errorCode: body?.error ?? 'payment_failed',
         };
       }
 
       const data = await res.json();
       return {
         success: true,
-        receiptId: data.txHash,
+        receiptId: data.enrollment?.paperId ?? data.txHash,
         txHash: data.txHash,
         explorerUrl: data.explorerUrl,
       };
