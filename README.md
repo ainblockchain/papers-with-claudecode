@@ -148,7 +148,6 @@ Knowledge graph indexing, P256 multi-curve support, Cogito Node with LLM engine,
 - [`c460a08e`](https://github.com/ainblockchain/ain-blockchain/commit/c460a08e0dcdb1ee4e9eb4d8d6e57e682990d29b) Add knowledge graph index with Neo4j/memory backends and JSON-RPC read APIs
 - [`2d8610bc`](https://github.com/ainblockchain/ain-blockchain/commit/2d8610bc42a34354743a3bba4df3c6965197ce94) Add P256 signature verification support for multi-curve transactions
 - [`ab184c5a`](https://github.com/ainblockchain/ain-blockchain/commit/ab184c5a32eb12d28d416c2a0b5663eacc12567c) Upgrade dependencies and fix secp256k1 native module for Node.js 20
-- [`65e828c9`](https://github.com/ainblockchain/ain-blockchain/commit/65e828c9fb27e698d84a6af52c00bfffb1a76464) Remove hardcoded Neo4j credentials from node_params.json defaults
 - [`502a9901`](https://github.com/ainblockchain/ain-blockchain/commit/502a9901ae6bf8f1b8d937f571fe6bc3403a06d2) Dockerize ain-blockchain with Neo4j knowledge graph support
 - [`892c68df`](https://github.com/ainblockchain/ain-blockchain/commit/892c68dfeaeb784cd7a64ce72f302c24c3795fc3) Add LLM engine integration for Cogito Node
 - [`3fe3c864`](https://github.com/ainblockchain/ain-blockchain/commit/3fe3c8640e494bfdf34b0be88a9eb19df8c5b034) Dockerize Cogito Node with Neo4j persistence and LLM engine
