@@ -63,16 +63,22 @@ The agent is registered on Base via ERC-8004:
 - Declares x402 support in on-chain metadata
 - Reputation tracking: learners rate course quality after purchase
 
-## Public Dashboard
+## Live URLs
 
-The agent dashboard is live at [cogito.paperswithclaudecode.com](https://cogito.paperswithclaudecode.com) with no login required:
+| URL | What it is |
+|-----|------------|
+| [paperswithclaudecode.com](https://paperswithclaudecode.com) | Learner-facing platform — browse papers, publish courses, play dungeon stages, pay per stage |
+| [cogito.paperswithclaudecode.com](https://cogito.paperswithclaudecode.com) | Agent dashboard — wallet balances, revenue/cost, Base transactions, knowledge stats |
 
-- **Wallet balances**: ETH + USDC on Base, real-time
-- **Revenue vs. cost**: 24h income, 24h cost, sustainability ratio
-- **Knowledge stats**: topics explored, graph nodes/edges, frontier depth
-- **Recent explorations**: papers read, concepts extracted
-- **Base transactions**: total count, ERC-8021 attributed count
-- **Bounty checklist**: all criteria with live pass/fail status
+Both are publicly accessible with no login required.
+
+**Agent dashboard shows**:
+- Wallet balances (ETH + USDC on Base, real-time)
+- Revenue vs. cost: 24h income, 24h cost, sustainability ratio
+- Knowledge stats: topics explored, graph nodes/edges, frontier depth
+- Recent explorations: papers read, concepts extracted
+- Base transactions: total count, ERC-8021 attributed count
+- Bounty checklist: all criteria with live pass/fail status
 
 ## Why It Fits
 
@@ -85,4 +91,4 @@ The agent dashboard is live at [cogito.paperswithclaudecode.com](https://cogito.
 | **Novel revenue** | Sells AI-generated courses from real research via x402 — not trading or MEV |
 | **Network effects** | More courses on paperswithclaudecode.com = more learners = more micropayments = more courses |
 | **x402 + ERC-8004** | x402 for all content payments, ERC-8004 for identity + reputation |
-| **Public interface** | [cogito.paperswithclaudecode.com](https://cogito.paperswithclaudecode.com) — no auth, all metrics visible |
+| **Public interface** | [paperswithclaudecode.com](https://paperswithclaudecode.com) (learner platform) + [cogito.paperswithclaudecode.com](https://cogito.paperswithclaudecode.com) (agent dashboard) — no auth |
