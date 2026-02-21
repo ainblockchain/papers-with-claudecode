@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { listCourses, fetchCoursesJson, fetchCourseReadme, fetchCourseCreatedAt } from '@/lib/github';
+import { listCourses, fetchCoursesJson, fetchCourseReadme, fetchCourseCreatedAt, fetchPaperJson } from '@/lib/github';
 import type { Paper } from '@/types/paper';
 
 /** Convert slug to title case: "attention-is-all-you-need" → "Attention Is All You Need" */
@@ -96,13 +96,34 @@ export async function GET() {
           // README not available
         }
 
+        // Fetch paper.json for rich metadata (authors, arxiv, thumbnail, etc.)
+        const paperJson = await fetchPaperJson(entry.paperSlug);
+
         // Fetch latest commit date for the course directory
         let publishedAt = '';
         try {
           publishedAt = await fetchCourseCreatedAt(entry.paperSlug, entry.courseSlug);
         } catch {
-          // Commit date not available
+          // Commit date not available — fall back to paper.json date
+          publishedAt = paperJson?.publishedAt || '';
         }
+
+        // Use paper.json title/description if README didn't provide them
+        if (paperJson?.title && title === slugToTitle(entry.paperSlug)) {
+          title = paperJson.title;
+        }
+        if (paperJson?.description && description.startsWith('Interactive learning course:')) {
+          description = paperJson.description;
+        }
+
+        const arxivId = paperJson?.arxivId || '';
+        const thumbnailUrl = arxivId
+          ? `https://cdn-thumbnails.huggingface.co/social-thumbnails/papers/${arxivId}.png`
+          : '';
+
+        const authors = paperJson?.authors?.length
+          ? paperJson.authors.map((a, i) => ({ id: `${entry.paperSlug}-${i}`, name: a.name }))
+          : [];
 
         // Append course slug if paper has multiple courses
         const courseLabel = entry.courseSlug !== 'bible' ? ` (${slugToTitle(entry.courseSlug)})` : '';
@@ -111,12 +132,17 @@ export async function GET() {
           id: courseId,
           title: title + courseLabel,
           description,
-          authors: [],
+          authors,
           publishedAt,
-          thumbnailUrl: '',
-          arxivUrl: '',
-          submittedBy: 'papers-kg-builder',
+          thumbnailUrl,
+          arxivUrl: arxivId ? `https://arxiv.org/abs/${arxivId}` : '',
+          githubUrl: paperJson?.githubUrl,
+          submittedBy: paperJson?.submittedBy || 'papers-kg-builder',
           totalStages,
+          courseName: slugToTitle(entry.courseSlug),
+          organization: paperJson?.organization
+            ? { name: paperJson.organization.name, logoUrl: '' }
+            : undefined,
         };
 
         return paper;

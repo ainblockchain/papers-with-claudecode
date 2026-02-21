@@ -295,3 +295,32 @@ export async function fetchCourseCreatedAt(
   setCache(cacheKey, isoDate);
   return isoDate;
 }
+
+export interface PaperJsonData {
+  title?: string;
+  description?: string;
+  arxivId?: string;
+  githubUrl?: string;
+  authors?: { name: string }[];
+  publishedAt?: string;
+  organization?: { name: string };
+  submittedBy?: string;
+}
+
+/**
+ * Fetch and parse paper.json for a given paper slug.
+ */
+export async function fetchPaperJson(paperSlug: string): Promise<PaperJsonData | null> {
+  const cacheKey = `paperJson:${paperSlug}`;
+  const cached = getCached<PaperJsonData>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const raw = await fetchFileContent(`${paperSlug}/paper.json`);
+    const data = JSON.parse(raw) as PaperJsonData;
+    setCache(cacheKey, data);
+    return data;
+  } catch {
+    return null;
+  }
+}
