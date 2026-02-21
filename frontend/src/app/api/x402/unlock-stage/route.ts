@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getChainConfig } from '@/lib/kite/contracts';
-import { buildRouteConfig, withX402Payment } from '../_lib/x402-nextjs';
+import {
+  buildKiteRouteConfig,
+  buildBaseRouteConfig,
+  createWrappedHandler,
+} from '../_lib/x402-nextjs';
 
 async function handleUnlockStage(req: NextRequest): Promise<NextResponse> {
   let body: {
@@ -96,9 +100,27 @@ async function handleUnlockStage(req: NextRequest): Promise<NextResponse> {
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const routeConfig = buildRouteConfig({
-  description: 'Unlock a learning stage after quiz completion',
-  resource: `${baseUrl}/api/x402/unlock-stage`,
-});
 
-export const POST = withX402Payment(routeConfig, handleUnlockStage);
+const kiteHandler = createWrappedHandler(
+  handleUnlockStage,
+  buildKiteRouteConfig({
+    description: 'Unlock a learning stage after quiz completion',
+    resource: `${baseUrl}/api/x402/unlock-stage`,
+  }),
+  'kite',
+);
+
+const baseHandler = createWrappedHandler(
+  handleUnlockStage,
+  buildBaseRouteConfig({
+    description: 'Unlock a learning stage after quiz completion',
+    resource: `${baseUrl}/api/x402/unlock-stage`,
+  }),
+  'base',
+);
+
+export async function POST(req: NextRequest) {
+  const chain = req.nextUrl.searchParams.get('chain') || 'kite';
+  if (chain === 'base') return baseHandler(req);
+  return kiteHandler(req);
+}

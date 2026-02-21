@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getChainConfig } from '@/lib/kite/contracts';
-import { buildRouteConfig, withX402Payment } from '../_lib/x402-nextjs';
+import {
+  buildKiteRouteConfig,
+  buildBaseRouteConfig,
+  createWrappedHandler,
+} from '../_lib/x402-nextjs';
 
 async function handleEnroll(req: NextRequest): Promise<NextResponse> {
   let body: { paperId?: string; passkeyPublicKey?: string };
@@ -51,10 +55,29 @@ async function handleEnroll(req: NextRequest): Promise<NextResponse> {
   });
 }
 
+// Pre-create wrapped handlers for each chain at module level
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const routeConfig = buildRouteConfig({
-  description: 'Enroll in a Papers LMS learning course',
-  resource: `${baseUrl}/api/x402/enroll`,
-});
 
-export const POST = withX402Payment(routeConfig, handleEnroll);
+const kiteHandler = createWrappedHandler(
+  handleEnroll,
+  buildKiteRouteConfig({
+    description: 'Enroll in a Papers LMS learning course',
+    resource: `${baseUrl}/api/x402/enroll`,
+  }),
+  'kite',
+);
+
+const baseHandler = createWrappedHandler(
+  handleEnroll,
+  buildBaseRouteConfig({
+    description: 'Enroll in a Papers LMS learning course',
+    resource: `${baseUrl}/api/x402/enroll`,
+  }),
+  'base',
+);
+
+export async function POST(req: NextRequest) {
+  const chain = req.nextUrl.searchParams.get('chain') || 'kite';
+  if (chain === 'base') return baseHandler(req);
+  return kiteHandler(req);
+}

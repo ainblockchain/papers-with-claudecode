@@ -1,8 +1,6 @@
-// Multi-chain payment adapter — delegates to existing x402Adapter and ainAdapter
+// Multi-chain payment adapter — delegates to x402Adapter for Kite and direct x402 API for Base
 
 import { x402Adapter, type PaymentResult } from '@/lib/adapters/x402';
-import { ainAdapter } from '@/lib/adapters/ain-blockchain';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { loadPasskeyInfo } from '@/lib/ain/passkey';
 import { type PaymentChainId, PAYMENT_CHAINS } from './chains';
 
@@ -19,8 +17,8 @@ class MultiChainPaymentAdapter {
     switch (params.chain) {
       case 'kite':
         return this.kitePurchaseCourse(params);
-      case 'ain':
-        return this.ainPurchaseCourse(params);
+      case 'base':
+        return this.basePurchaseCourse(params);
       default:
         return {
           success: false,
@@ -33,8 +31,8 @@ class MultiChainPaymentAdapter {
     switch (params.chain) {
       case 'kite':
         return this.kiteUnlockStage(params);
-      case 'ain':
-        return this.ainUnlockStage(params);
+      case 'base':
+        return this.baseUnlockStage(params);
       default:
         return {
           success: false,
@@ -115,46 +113,50 @@ class MultiChainPaymentAdapter {
     }
   }
 
-  // ── AIN: Course Purchase via ainAdapter.accessEntry() ──
-  private async ainPurchaseCourse(
+  // ── Base Sepolia: Course Purchase via /api/x402/enroll?chain=base ──
+  private async basePurchaseCourse(
     params: ChainPaymentParams
   ): Promise<PaymentResult> {
-    const mockTxHash = `0xain${Date.now().toString(16)}${'0'.repeat(40)}`.slice(0, 66);
     try {
-      const passkeyInfo = useAuthStore.getState().passkeyInfo;
-      const ownerAddress = passkeyInfo?.ainAddress || '0x_default_owner';
-      const topicPath = `courses/${params.paperId}`;
+      const passkeyInfo = loadPasskeyInfo();
+      const res = await fetch('/api/x402/enroll?chain=base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paperId: params.paperId,
+          passkeyPublicKey: passkeyInfo?.publicKey || '',
+        }),
+      });
 
-      const result = await ainAdapter.accessEntry(
-        ownerAddress,
-        topicPath,
-        params.paperId
-      );
-
-      if (result?.paid || result?.data?.paid || result?.ok) {
+      if (res.status === 402) {
         return {
-          success: true,
-          receiptId: `ain-purchase-${Date.now()}`,
-          txHash: result?.tx_hash || result?.data?.tx_hash || mockTxHash,
-          explorerUrl: `https://insight.ainetwork.ai/transactions/${result?.tx_hash || mockTxHash}`,
+          success: false,
+          error: 'Payment required on Base Sepolia.',
+          errorCode: 'payment_required',
         };
       }
-      // If the on-chain call didn't confirm "paid", still treat as success
-      // (AIN testnet may not have the knowledge module fully deployed)
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        return {
+          success: false,
+          error: body?.message ?? `Request failed (${res.status})`,
+          errorCode: body?.error,
+        };
+      }
+
+      const data = await res.json();
       return {
         success: true,
-        receiptId: `ain-purchase-${Date.now()}`,
-        txHash: mockTxHash,
-        explorerUrl: `https://insight.ainetwork.ai/transactions/${mockTxHash}`,
+        receiptId: data.enrollment?.paperId,
+        txHash: data.txHash,
+        explorerUrl: data.explorerUrl,
       };
-    } catch {
-      // Graceful fallback — simulate successful AIN payment
-      await new Promise((r) => setTimeout(r, 800));
+    } catch (err) {
       return {
-        success: true,
-        receiptId: `ain-purchase-${Date.now()}`,
-        txHash: mockTxHash,
-        explorerUrl: `https://insight.ainetwork.ai/transactions/${mockTxHash}`,
+        success: false,
+        error: err instanceof Error ? err.message : 'Network error',
+        errorCode: 'network_error',
       };
     }
   }
@@ -174,46 +176,53 @@ class MultiChainPaymentAdapter {
     });
   }
 
-  // ── AIN: Stage Unlock via accessEntry with stage-specific topicPath ──
-  private async ainUnlockStage(
+  // ── Base Sepolia: Stage Unlock via /api/x402/unlock-stage?chain=base ──
+  private async baseUnlockStage(
     params: ChainPaymentParams
   ): Promise<PaymentResult> {
-    const mockTxHash = `0xain${Date.now().toString(16)}${'0'.repeat(40)}`.slice(0, 66);
     try {
-      const passkeyInfo = useAuthStore.getState().passkeyInfo;
-      const ownerAddress = passkeyInfo?.ainAddress || '0x_default_owner';
-      const topicPath = `courses/${params.paperId}/stages/${params.stageNum}`;
-      const entryId = params.stageId || `stage-${params.stageNum}`;
+      const passkeyInfo = loadPasskeyInfo();
+      const res = await fetch('/api/x402/unlock-stage?chain=base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paperId: params.paperId,
+          stageId: params.stageId,
+          stageNum: params.stageNum ?? 0,
+          score: params.score ?? 0,
+          passkeyPublicKey: passkeyInfo?.publicKey || '',
+        }),
+      });
 
-      const result = await ainAdapter.accessEntry(
-        ownerAddress,
-        topicPath,
-        entryId
-      );
-
-      if (result?.paid || result?.data?.paid || result?.ok) {
+      if (res.status === 402) {
         return {
-          success: true,
-          receiptId: `ain-stage-${Date.now()}`,
-          txHash: result?.tx_hash || result?.data?.tx_hash || mockTxHash,
-          explorerUrl: `https://insight.ainetwork.ai/transactions/${result?.tx_hash || mockTxHash}`,
+          success: false,
+          error: 'Payment required on Base Sepolia.',
+          errorCode: 'payment_required',
         };
       }
-      // Fallback: treat as success even if on-chain didn't confirm
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        return {
+          success: false,
+          error: body?.message ?? `Request failed (${res.status})`,
+          errorCode: body?.error,
+        };
+      }
+
+      const data = await res.json();
       return {
         success: true,
-        receiptId: `ain-stage-${Date.now()}`,
-        txHash: mockTxHash,
-        explorerUrl: `https://insight.ainetwork.ai/transactions/${mockTxHash}`,
+        receiptId: data.txHash,
+        txHash: data.txHash,
+        explorerUrl: data.explorerUrl,
       };
-    } catch {
-      // Graceful fallback — simulate successful AIN payment
-      await new Promise((r) => setTimeout(r, 800));
+    } catch (err) {
       return {
-        success: true,
-        receiptId: `ain-stage-${Date.now()}`,
-        txHash: mockTxHash,
-        explorerUrl: `https://insight.ainetwork.ai/transactions/${mockTxHash}`,
+        success: false,
+        error: err instanceof Error ? err.message : 'Network error',
+        errorCode: 'network_error',
       };
     }
   }
