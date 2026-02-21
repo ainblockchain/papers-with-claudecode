@@ -113,7 +113,7 @@ export function buildBaseRouteConfig(overrides?: {
       price: {
         amount: process.env.BASE_X402_PRICE_AMOUNT || '1000',
         asset: BASE_USDC,
-        extra: { name: 'USDC', version: '2' },
+        extra: { name: 'USD Coin', version: '2' },
       },
       maxTimeoutSeconds: 300,
     },
