@@ -102,7 +102,7 @@ wss.on('connection', async (ws: WebSocket, req) => {
       session.id,
       {
         courseId: session.courseId,
-        model: 'haiku',
+        model: 'sonnet',
         // Idle nudge disabled — injecting stdin during Opus response generation causes session drops
         idleNudgeMs: 0,
         mode: session.mode,
