@@ -41,6 +41,12 @@ export function getServerForChain(chain: string): x402ResourceServer {
   return chain === 'base' ? baseServer : kiteServer;
 }
 
+export function getExplorerUrl(chain: string): string {
+  return chain === 'base'
+    ? 'https://sepolia.basescan.org'
+    : `https://testnet.kitescan.ai`;
+}
+
 /**
  * Build a RouteConfig for Kite chain (Pieverse).
  */
@@ -84,6 +90,7 @@ export function buildBaseRouteConfig(overrides?: {
       price: {
         amount: process.env.BASE_X402_PRICE_AMOUNT || '1000',
         asset: BASE_SEPOLIA_USDC,
+        extra: { name: 'USDC', version: '2' },
       },
       maxTimeoutSeconds: 300,
     },

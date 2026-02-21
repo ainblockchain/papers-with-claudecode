@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getChainConfig } from '@/lib/kite/contracts';
 import {
   buildKiteRouteConfig,
   buildBaseRouteConfig,
   createWrappedHandler,
+  getExplorerUrl,
 } from '../_lib/x402-nextjs';
 
 async function handleUnlockStage(req: NextRequest): Promise<NextResponse> {
@@ -44,7 +44,7 @@ async function handleUnlockStage(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const chainConfig = getChainConfig();
+  const chain = req.nextUrl.searchParams.get('chain') || 'kite';
 
   // Payment has already been verified and settled by withX402 middleware.
   // Record stage completion on AIN blockchain via event tracker.
@@ -94,7 +94,7 @@ async function handleUnlockStage(req: NextRequest): Promise<NextResponse> {
       attestationHash: `0x${attestationHash}`,
       completedAt: new Date().toISOString(),
     },
-    explorerUrl: `${chainConfig.explorerUrl}`,
+    explorerUrl: getExplorerUrl(chain),
     message: 'Stage unlocked. Payment settled via x402 protocol. Progress recorded on AIN blockchain.',
   });
 }

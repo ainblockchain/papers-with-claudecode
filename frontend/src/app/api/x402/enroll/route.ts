@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getChainConfig } from '@/lib/kite/contracts';
 import {
   buildKiteRouteConfig,
   buildBaseRouteConfig,
   createWrappedHandler,
+  getExplorerUrl,
 } from '../_lib/x402-nextjs';
 
 async function handleEnroll(req: NextRequest): Promise<NextResponse> {
@@ -25,7 +25,7 @@ async function handleEnroll(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const chainConfig = getChainConfig();
+  const chain = req.nextUrl.searchParams.get('chain') || 'kite';
 
   // Payment has already been verified and settled by withX402 middleware.
   // Record enrollment on AIN blockchain via event tracker.
@@ -50,7 +50,7 @@ async function handleEnroll(req: NextRequest): Promise<NextResponse> {
       paperId,
       enrolledAt: new Date().toISOString(),
     },
-    explorerUrl: `${chainConfig.explorerUrl}`,
+    explorerUrl: getExplorerUrl(chain),
     message: 'Enrollment confirmed. Payment settled via x402 protocol.',
   });
 }
