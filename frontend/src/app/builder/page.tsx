@@ -55,10 +55,8 @@ export default function CourseBuilderPage() {
     };
 
     window.addEventListener('beforeunload', cleanupOnClose);
-    window.addEventListener('pagehide', cleanupOnClose);
     return () => {
       window.removeEventListener('beforeunload', cleanupOnClose);
-      window.removeEventListener('pagehide', cleanupOnClose);
     };
   }, []);
 
