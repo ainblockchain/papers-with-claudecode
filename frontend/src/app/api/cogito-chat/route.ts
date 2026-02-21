@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 async function handleCogitoChat(req: NextRequest): Promise<NextResponse> {
-  let body: { message?: string };
+  let body: { message?: string; contextId?: string };
   try {
     body = await req.json();
   } catch {
@@ -40,7 +40,7 @@ async function handleCogitoChat(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const { message } = body;
+  const { message, contextId } = body;
   if (!message || typeof message !== 'string') {
     return NextResponse.json(
       { error: 'invalid_params', message: 'message is required' },
@@ -48,65 +48,63 @@ async function handleCogitoChat(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Try MCP publication_guide tool first for knowledge queries
+  // Send via A2A protocol (JSON-RPC message/send)
+  const messageId = `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const rpcId = `rpc-${Date.now()}`;
+
   try {
-    const mcpRes = await fetch(`${COGITO_URL}/api/mcp-call`, {
+    const a2aRes = await fetch(`${COGITO_URL}/api/a2a`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tool: 'publication_guide',
-        params: { query: message },
+        jsonrpc: '2.0',
+        method: 'message/send',
+        id: rpcId,
+        params: {
+          message: {
+            messageId,
+            role: 'user',
+            parts: [{ type: 'text', text: message }],
+          },
+          ...(contextId && { configuration: { contextId } }),
+        },
       }),
     });
 
-    if (mcpRes.ok) {
-      const mcpData = await mcpRes.json();
-      const reply =
-        typeof mcpData === 'string'
-          ? mcpData
-          : mcpData.result || mcpData.content || mcpData.text || JSON.stringify(mcpData);
-
-      // Extract tx hash from payment response header if present
-      const txHash =
-        mcpRes.headers.get('x-payment-tx-hash') ||
-        undefined;
-
-      return NextResponse.json({ reply, txHash });
+    if (!a2aRes.ok) {
+      console.error('[cogito-chat] A2A endpoint returned', a2aRes.status);
+      return NextResponse.json({
+        reply: 'Cogito is temporarily unavailable. Please try again later.',
+      });
     }
-  } catch {
-    // MCP call failed, fall through to general chat
-  }
 
-  // Fallback: general agent chat endpoint
-  try {
-    const chatRes = await fetch(`${COGITO_URL}/api/agent/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
+    const rpcData = await a2aRes.json();
+
+    // Handle JSON-RPC error
+    if (rpcData.error) {
+      console.error('[cogito-chat] A2A RPC error:', rpcData.error);
+      return NextResponse.json({
+        reply: `Cogito error: ${rpcData.error.message || 'Unknown error'}`,
+      });
+    }
+
+    // Extract text from A2A response parts
+    const result = rpcData.result;
+    const textParts = (result?.parts || [])
+      .filter((p: { kind?: string; type?: string }) => p.kind === 'text' || p.type === 'text')
+      .map((p: { text?: string }) => p.text || '')
+      .join('\n');
+
+    return NextResponse.json({
+      reply: textParts || 'No response from Cogito.',
+      contextId: result?.contextId,
+      messageId: result?.messageId,
     });
-
-    if (chatRes.ok) {
-      const chatData = await chatRes.json();
-      const reply =
-        typeof chatData === 'string'
-          ? chatData
-          : chatData.reply || chatData.response || chatData.content || JSON.stringify(chatData);
-
-      return NextResponse.json({ reply });
-    }
-
-    return NextResponse.json(
-      {
-        reply: `I received your message: "${message}". The Cogito knowledge service is currently processing. Please try again shortly.`,
-      },
-    );
   } catch (err) {
     console.error('[cogito-chat] Error forwarding to Cogito:', err);
-    return NextResponse.json(
-      {
-        reply: 'Cogito is temporarily unavailable. Please try again later.',
-      },
-    );
+    return NextResponse.json({
+      reply: 'Cogito is temporarily unavailable. Please try again later.',
+    });
   }
 }
 

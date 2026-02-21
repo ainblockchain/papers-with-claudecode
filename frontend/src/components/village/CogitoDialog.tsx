@@ -5,6 +5,7 @@ import { useVillageStore } from '@/stores/useVillageStore';
 import { X, Send, Loader2, Brain, AlertTriangle, Wallet, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createBaseX402Fetch, getBaseUsdcBalance } from '@/lib/payment/base-x402-client';
+import { loadPasskeyInfo } from '@/lib/ain/passkey';
 import { formatChainAmount } from '@/lib/payment/chains';
 
 interface AgentCard {
@@ -22,6 +23,19 @@ interface ChatMessage {
   txHash?: string;
 }
 
+/** Extract txHash from the base64-encoded PAYMENT-RESPONSE header */
+function extractTxHash(res: Response): string | undefined {
+  const header =
+    res.headers.get('PAYMENT-RESPONSE') || res.headers.get('X-PAYMENT-RESPONSE');
+  if (!header) return undefined;
+  try {
+    const decoded = JSON.parse(atob(header));
+    return decoded.transaction || decoded.txHash || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function CogitoDialog() {
   const { cogitoDialogOpen, setCogitoDialogOpen } = useVillageStore();
   const [agentCard, setAgentCard] = useState<AgentCard | null>(null);
@@ -31,9 +45,17 @@ export function CogitoDialog() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
-  const [balance, setBalance] = useState<{ formatted: string; address: `0x${string}` } | null>(null);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [hasPasskey, setHasPasskey] = useState(false);
+  const [contextId, setContextId] = useState<string | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Check passkey on open
+  useEffect(() => {
+    if (!cogitoDialogOpen) return;
+    setHasPasskey(!!loadPasskeyInfo()?.publicKey);
+  }, [cogitoDialogOpen]);
 
   // Fetch A2A agent card via our API proxy (avoids CORS)
   useEffect(() => {
@@ -55,7 +77,7 @@ export function CogitoDialog() {
     if (!cogitoDialogOpen) return;
     getBaseUsdcBalance()
       .then((result) => {
-        if (result) setBalance({ formatted: result.formatted, address: result.address });
+        if (result) setBalance(result.formatted);
       })
       .catch(() => {});
   }, [cogitoDialogOpen]);
@@ -92,51 +114,66 @@ export function CogitoDialog() {
     setSending(true);
 
     try {
-      // Use Base x402 client — auto-handles 402 → sign → retry
-      const x402FetchFn = createBaseX402Fetch();
-      if (!x402FetchFn) {
-        throw new Error('Register a passkey first to enable Base x402 payments.');
-      }
-
-      const res = await x402FetchFn('/api/cogito-chat?chain=base', {
+      const fetchBody = JSON.stringify({ message: text, contextId });
+      const fetchOpts: RequestInit = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
-      });
+        body: fetchBody,
+      };
+
+      // Step 1: initial request (will return 402)
+      let res = await fetch('/api/cogito-chat', fetchOpts);
+
+      // Step 2: handle 402 — sign x402 payment on Base and retry
+      if (res.status === 402) {
+        const x402FetchFn = createBaseX402Fetch();
+        if (!x402FetchFn) {
+          throw new Error('Register a passkey first to enable x402 payments on Base.');
+        }
+
+        // Use the Base x402 client which auto-handles 402 → sign → retry
+        res = await x402FetchFn('/api/cogito-chat', fetchOpts);
+
+        // If still 402 after payment attempt, payment verification failed
+        if (res.status === 402) {
+          throw new Error('Payment verification failed. Check your USDC balance on Base.');
+        }
+      }
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const errorMsg = (body as Record<string, string>).details
-          ? `${(body as Record<string, string>).error}: ${(body as Record<string, string>).details}`
-          : (body as Record<string, string>).error || `HTTP ${res.status}`;
-        throw new Error(errorMsg);
-      }
-
-      // Extract txHash from payment response header
-      let txHash: string | undefined;
-      const paymentHeader = res.headers.get('PAYMENT-RESPONSE') || res.headers.get('X-PAYMENT-RESPONSE');
-      if (paymentHeader) {
+        const errText = await res.text().catch(() => '');
+        let errMsg = `Server error (${res.status})`;
         try {
-          const decoded = JSON.parse(atob(paymentHeader));
-          txHash = decoded.transaction || decoded.txHash;
-        } catch { /* ignore */ }
+          const errBody = JSON.parse(errText);
+          errMsg = errBody.details
+            ? `${errBody.error}: ${errBody.details}`
+            : errBody.error || errBody.message || errMsg;
+        } catch { /* use default */ }
+        throw new Error(errMsg);
       }
 
-      const data = (await res.json()) as { reply: string; txHash?: string };
+      // Step 3: parse response — use text() for robustness
+      const txHash = extractTxHash(res);
+      const responseText = await res.text();
+      let reply: string;
+      try {
+        const data = JSON.parse(responseText);
+        reply = data.reply || data.response || data.content || JSON.stringify(data);
+        // Preserve A2A context for conversation continuity
+        if (data.contextId) setContextId(data.contextId);
+      } catch {
+        reply = responseText || 'Empty response from Cogito.';
+      }
+
       setMessages((prev) => [
         ...prev,
-        {
-          role: 'agent',
-          content: data.reply,
-          timestamp: Date.now(),
-          txHash: txHash || data.txHash,
-        },
+        { role: 'agent', content: reply, timestamp: Date.now(), txHash },
       ]);
 
       // Refresh balance after payment
       getBaseUsdcBalance()
         .then((result) => {
-          if (result) setBalance({ formatted: result.formatted, address: result.address });
+          if (result) setBalance(result.formatted);
         })
         .catch(() => {});
     } catch (err) {
@@ -148,8 +185,6 @@ export function CogitoDialog() {
   }, [input, sending]);
 
   if (!cogitoDialogOpen) return null;
-
-  const hasPasskey = !!createBaseX402Fetch();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -218,9 +253,9 @@ export function CogitoDialog() {
               {formatChainAmount('base', 'stageUnlock')} per message &middot; Base x402
             </p>
           </div>
-          {balance && (
+          {balance !== null && (
             <span className="text-[10px] font-mono text-gray-400">
-              {balance.formatted} USDC
+              {balance} USDC
             </span>
           )}
         </div>
@@ -230,7 +265,7 @@ export function CogitoDialog() {
           <div className="px-3 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
             <p className="text-[10px] text-amber-300">
-              Register a passkey to enable x402 payments on Base. Messages cannot be sent without payment.
+              Register a passkey to enable x402 payments on Base.
             </p>
           </div>
         )}
