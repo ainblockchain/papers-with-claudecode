@@ -138,7 +138,7 @@ else
   else
     # First visit: create marker, then start lesson with initial message
     [ -n "$COURSE_ID" ] && touch "$MARKER" 2>/dev/null
-    INITIAL_MSG="MANDATORY FIRST STEP: Run 'unlock-stage.sh ${CURRENT_STAGE}' to check payment before doing anything else. If exit code is 42 (payment required), complete payment using Kite MCP tools as described in ~/CLAUDE.md Payment Protocol section. Do NOT start teaching until payment is confirmed. After payment, read the local CLAUDE.md and begin exploring Stage ${CURRENT_STAGE}."
+    INITIAL_MSG="Starting the learning course for this paper (Stage ${CURRENT_STAGE}). Please read CLAUDE.md and begin exploring."
     exec claude $COMMON_FLAGS "$INITIAL_MSG"
   fi
 fi

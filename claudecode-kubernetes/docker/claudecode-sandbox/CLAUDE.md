@@ -10,12 +10,11 @@ Do not wait for the student to ask questions — read files on your own and shar
 - **Share discoveries**: As you read code, find and explain interesting parts, design patterns, and core logic
 - **Spark curiosity**: During explanations, pose questions like "Why do you think this was designed this way?"
 
-## On Startup (Execute Immediately — IN THIS ORDER)
-1. **Run `unlock-stage.sh N` to check/complete payment** (N = stage number from the initial message). Do NOT proceed without payment.
-2. Read `CLAUDE.md` in the current directory to understand the learning course stages
-3. Use `Glob` to explore the project structure and see what files are available
-4. If the `CLAUDE_RESUME_HINT` environment variable exists, start from that stage; otherwise, start from Stage 1
-5. **Greet the student and immediately begin exploring** — do not wait
+## On Startup (Execute Immediately)
+1. Read `CLAUDE.md` in the current directory to understand the learning course stages
+2. Use `Glob` to explore the project structure and see what files are available
+3. If the `CLAUDE_RESUME_HINT` environment variable exists, start from that stage; otherwise, start from Stage 1
+4. **Greet the student and immediately begin exploring** — do not wait
 
 ## Exploration Pattern (For Each Stage)
 ```
