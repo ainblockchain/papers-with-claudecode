@@ -3,6 +3,8 @@ import { FriendPosition } from '@/types/social';
 import type { CourseLocation } from '@/lib/ain/location-types';
 import { PLOT_WIDTH, PLOT_HEIGHT } from '@/lib/tmj/village-generator';
 
+export const COGITO_NPC = { x: 3, y: 4, width: 3, height: 3 } as const;
+
 interface VillageState {
   playerPosition: { x: number; y: number };
   playerDirection: 'up' | 'down' | 'left' | 'right';
@@ -11,6 +13,7 @@ interface VillageState {
   courseLocations: CourseLocation[];
   mapDimensions: { width: number; height: number };
   positionRestored: boolean;
+  cogitoDialogOpen: boolean;
 
   setPlayerPosition: (pos: { x: number; y: number }) => void;
   setPlayerDirection: (dir: 'up' | 'down' | 'left' | 'right') => void;
@@ -20,6 +23,7 @@ interface VillageState {
   setCourseLocations: (locations: CourseLocation[]) => void;
   setMapDimensions: (dims: { width: number; height: number }) => void;
   setPositionRestored: (restored: boolean) => void;
+  setCogitoDialogOpen: (open: boolean) => void;
 }
 
 export const useVillageStore = create<VillageState>((set, get) => ({
@@ -30,6 +34,7 @@ export const useVillageStore = create<VillageState>((set, get) => ({
   courseLocations: [],
   mapDimensions: { width: PLOT_WIDTH, height: PLOT_HEIGHT },
   positionRestored: false,
+  cogitoDialogOpen: false,
 
   setPlayerPosition: (playerPosition) => set({ playerPosition }),
   setPlayerDirection: (playerDirection) => set({ playerDirection }),
@@ -42,4 +47,5 @@ export const useVillageStore = create<VillageState>((set, get) => ({
   setCourseLocations: (courseLocations) => set({ courseLocations }),
   setMapDimensions: (mapDimensions) => set({ mapDimensions }),
   setPositionRestored: (positionRestored) => set({ positionRestored }),
+  setCogitoDialogOpen: (cogitoDialogOpen) => set({ cogitoDialogOpen }),
 }));

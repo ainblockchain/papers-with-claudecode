@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useVillageStore } from '@/stores/useVillageStore';
+import { useVillageStore, COGITO_NPC } from '@/stores/useVillageStore';
 import { TILE_SIZE, WALK_ANIMATION_DURATION, SPRITE_SOURCE_SIZE } from '@/constants/game';
 import { useLocationSync } from '@/hooks/useLocationSync';
 import { useVillageMap } from '@/hooks/useVillageMap';
@@ -13,7 +13,7 @@ import { usePurchaseStore } from '@/stores/usePurchaseStore';
 import { papersAdapter } from '@/lib/adapters/papers';
 import { PLOT_WIDTH, PLOT_HEIGHT } from '@/lib/tmj/village-generator';
 import { drawGrassTile, drawPathTile, drawTree } from '@/lib/sprites/terrain';
-import { drawBuilding } from '@/lib/sprites/buildings';
+import { drawBuilding, drawCogitoBuilding } from '@/lib/sprites/buildings';
 import { getPreRenderedSprite } from '@/lib/sprites/cache';
 import { PLAYER_SPRITE } from '@/lib/sprites/player';
 import { FRIEND_SPRITES } from '@/lib/sprites/friends';
@@ -78,6 +78,13 @@ export function VillageCanvas() {
   const isWalkable = useCallback(
     (x: number, y: number) => {
       if (x < 0 || y < 0 || x >= mapW || y >= mapH) return false;
+      // Cogito NPC footprint — only entrance tile is walkable
+      if (x >= COGITO_NPC.x && x < COGITO_NPC.x + COGITO_NPC.width && y >= COGITO_NPC.y && y < COGITO_NPC.y + COGITO_NPC.height) {
+        const cogitoEntranceX = COGITO_NPC.x + Math.floor(COGITO_NPC.width / 2);
+        const cogitoEntranceY = COGITO_NPC.y + COGITO_NPC.height;
+        if (x === cogitoEntranceX && y === cogitoEntranceY) return true;
+        return false;
+      }
       for (const d of courseEntrances) {
         if (x >= d.x && x < d.x + d.width && y >= d.y && y < d.y + d.height) {
           const entranceX = d.x + Math.floor(d.width / 2);
@@ -155,6 +162,13 @@ export function VillageCanvas() {
           break;
         case 'e':
         case 'Enter': {
+          // Check Cogito NPC entrance first
+          const cogitoEntranceX = COGITO_NPC.x + Math.floor(COGITO_NPC.width / 2);
+          const cogitoEntranceY = COGITO_NPC.y + COGITO_NPC.height;
+          if (playerPosition.x === cogitoEntranceX && playerPosition.y === cogitoEntranceY) {
+            useVillageStore.getState().setCogitoDialogOpen(true);
+            return;
+          }
           const paperId = checkCourseEntry(playerPosition.x, playerPosition.y);
           if (paperId) {
             const access = getAccessStatus(paperId);
@@ -300,6 +314,22 @@ export function VillageCanvas() {
         ctx.fillText('▼ Enter', entranceScreenX + TILE_SIZE / 2, entranceScreenY + 10);
       });
 
+      // ── Cogito NPC building ──
+      {
+        const cbx = (COGITO_NPC.x - offsetX) * TILE_SIZE;
+        const cby = (COGITO_NPC.y - offsetY) * TILE_SIZE;
+        drawCogitoBuilding(ctx, cbx, cby, COGITO_NPC.width, COGITO_NPC.height, TILE_SIZE);
+
+        // Entrance marker
+        const cogitoEntX = COGITO_NPC.x + Math.floor(COGITO_NPC.width / 2);
+        const cogitoEntScreenX = (cogitoEntX - offsetX) * TILE_SIZE;
+        const cogitoEntScreenY = (COGITO_NPC.y + COGITO_NPC.height - offsetY) * TILE_SIZE;
+        ctx.fillStyle = '#2DD4BF';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▼ Talk', cogitoEntScreenX + TILE_SIZE / 2, cogitoEntScreenY + 10);
+      }
+
       // ── Friends (pixel art sprites) ──
       const friendsList = useVillageStore.getState().friends;
       friendsList.forEach((friend, i) => {
@@ -355,6 +385,21 @@ export function VillageCanvas() {
         const hintText = canEnter ? 'Press E to enter course' : 'Press E to purchase course';
         ctx.strokeText(hintText, playerScreenX + TILE_SIZE / 2, playerScreenY + TILE_SIZE + 16);
         ctx.fillText(hintText, playerScreenX + TILE_SIZE / 2, playerScreenY + TILE_SIZE + 16);
+      }
+
+      // ── Interaction hint near Cogito NPC ──
+      {
+        const cEntX = COGITO_NPC.x + Math.floor(COGITO_NPC.width / 2);
+        const cEntY = COGITO_NPC.y + COGITO_NPC.height;
+        if (pos.x === cEntX && pos.y === cEntY) {
+          ctx.fillStyle = '#2DD4BF';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 3;
+          const cHint = 'Press E to talk to Cogito';
+          ctx.strokeText(cHint, playerScreenX + TILE_SIZE / 2, playerScreenY + TILE_SIZE + 16);
+          ctx.fillText(cHint, playerScreenX + TILE_SIZE / 2, playerScreenY + TILE_SIZE + 16);
+        }
       }
 
       rafIdRef.current = requestAnimationFrame(draw);

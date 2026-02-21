@@ -157,3 +157,138 @@ export function drawBuilding(
   ctx.textBaseline = 'middle'
   ctx.fillText(label, x + pw / 2, signY + signH / 2, signW - 12)
 }
+
+/**
+ * Draw Cogito NPC building — teal/cyan knowledge agent with brain icon.
+ */
+export function drawCogitoBuilding(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  widthTiles: number,
+  heightTiles: number,
+  tileSize: number,
+) {
+  const pw = widthTiles * tileSize
+  const ph = heightTiles * tileSize
+  const color = '#0D9488'
+
+  // 1. Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)'
+  ctx.fillRect(x + 5, y + 5, pw, ph)
+
+  // 2. Building body
+  ctx.fillStyle = color
+  ctx.fillRect(x, y, pw, ph)
+  ctx.fillStyle = darkenColor(color, 15)
+  ctx.fillRect(x, y + ph * 0.6, pw, ph * 0.4)
+
+  // Glow outline (teal)
+  ctx.strokeStyle = '#5EEAD4'
+  ctx.lineWidth = 2
+  ctx.strokeRect(x + 1, y + 1, pw - 2, ph - 2)
+
+  // 3. Dome roof instead of peaked roof
+  const overhang = 6
+  ctx.fillStyle = '#134E4A'
+  ctx.beginPath()
+  ctx.ellipse(x + pw / 2, y, pw / 2 + overhang, 24, 0, Math.PI, 0)
+  ctx.fill()
+  ctx.strokeStyle = '#5EEAD4'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.ellipse(x + pw / 2, y, pw / 2 + overhang, 24, 0, Math.PI, 0)
+  ctx.stroke()
+
+  // 4. Brain icon (centered on building face)
+  const iconCx = x + pw / 2
+  const iconCy = y + ph * 0.32
+  const iconR = tileSize * 0.35
+  // Brain outer
+  ctx.fillStyle = '#CCFBF1'
+  ctx.beginPath()
+  ctx.arc(iconCx, iconCy, iconR, 0, Math.PI * 2)
+  ctx.fill()
+  // Brain hemispheres
+  ctx.strokeStyle = '#0D9488'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(iconCx, iconCy - iconR * 0.7)
+  ctx.lineTo(iconCx, iconCy + iconR * 0.7)
+  ctx.stroke()
+  // Left folds
+  ctx.beginPath()
+  ctx.arc(iconCx - iconR * 0.25, iconCy - iconR * 0.2, iconR * 0.35, -0.5, 2)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(iconCx - iconR * 0.2, iconCy + iconR * 0.25, iconR * 0.3, -0.8, 1.5)
+  ctx.stroke()
+  // Right folds
+  ctx.beginPath()
+  ctx.arc(iconCx + iconR * 0.25, iconCy - iconR * 0.2, iconR * 0.35, 1.1, 3.6)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(iconCx + iconR * 0.2, iconCy + iconR * 0.25, iconR * 0.3, 1.6, 3.9)
+  ctx.stroke()
+
+  // 5. Door — centered, arched (matching style)
+  const doorW = tileSize * 0.55
+  const doorH = tileSize * 0.85
+  const doorX = x + pw / 2 - doorW / 2
+  const doorY = y + ph - doorH
+  ctx.fillStyle = '#134E4A'
+  ctx.fillRect(doorX, doorY, doorW, doorH)
+  ctx.beginPath()
+  ctx.arc(doorX + doorW / 2, doorY, doorW / 2, Math.PI, 0)
+  ctx.fill()
+  ctx.strokeStyle = '#5EEAD4'
+  ctx.lineWidth = 1
+  ctx.strokeRect(doorX, doorY, doorW, doorH)
+  // Knob
+  ctx.fillStyle = '#5EEAD4'
+  ctx.beginPath()
+  ctx.arc(doorX + doorW * 0.75, doorY + doorH * 0.5, 2.5, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 6. Antenna on dome
+  const antX = x + pw / 2
+  const antY = y - 24
+  ctx.strokeStyle = '#5EEAD4'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(antX, y - 20)
+  ctx.lineTo(antX, antY - 8)
+  ctx.stroke()
+  // Antenna orb (pulsing feel)
+  ctx.fillStyle = '#2DD4BF'
+  ctx.beginPath()
+  ctx.arc(antX, antY - 10, 3, 0, Math.PI * 2)
+  ctx.fill()
+
+  // 7. Sign — "Cogito" with subtitle "Knowledge Agent"
+  const signW = Math.min(pw * 0.9, 120)
+  const signH = 26
+  const signX = x + pw / 2 - signW / 2
+  const signY = y + ph + 6
+
+  // Board
+  ctx.fillStyle = '#134E4A'
+  ctx.fillRect(signX, signY, signW, signH)
+  ctx.strokeStyle = '#5EEAD4'
+  ctx.lineWidth = 1
+  ctx.strokeRect(signX, signY, signW, signH)
+  // Hanging posts
+  ctx.fillStyle = '#5EEAD4'
+  ctx.fillRect(signX + 4, signY - 5, 3, 5)
+  ctx.fillRect(signX + signW - 7, signY - 5, 3, 5)
+  // Title
+  ctx.fillStyle = '#CCFBF1'
+  ctx.font = 'bold 9px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('Cogito', x + pw / 2, signY + 8)
+  // Subtitle
+  ctx.fillStyle = '#5EEAD4'
+  ctx.font = '7px sans-serif'
+  ctx.fillText('Knowledge Agent', x + pw / 2, signY + 19)
+}

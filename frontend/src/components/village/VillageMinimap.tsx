@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useVillageStore } from '@/stores/useVillageStore';
+import { useVillageStore, COGITO_NPC } from '@/stores/useVillageStore';
 import { FRIEND_COLORS, PLAYER_COLOR, TILE_SIZE } from '@/constants/game';
 
 const MINIMAP_HEIGHT = 128;
@@ -67,7 +67,32 @@ export function VillageMinimap() {
       ctx.stroke();
     }
 
-    // 2. Course buildings
+    // 2a. Cogito NPC building (teal)
+    {
+      const cbx = toX(COGITO_NPC.x);
+      const cby = toY(COGITO_NPC.y);
+      const cbw = COGITO_NPC.width * scale;
+      const cbh = COGITO_NPC.height * scale;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(cbx + 1, cby + 1, cbw, cbh);
+
+      ctx.fillStyle = '#0D9488';
+      ctx.fillRect(cbx, cby, cbw, cbh);
+
+      ctx.strokeStyle = '#5EEAD4';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(cbx, cby, cbw, cbh);
+
+      if (cbw > 12) {
+        ctx.fillStyle = '#CCFBF1';
+        ctx.font = `bold ${Math.max(5, Math.min(7, cbw / 3))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText('Cogito', cbx + cbw / 2, cby + cbh + Math.max(5, scale * 1.5));
+      }
+    }
+
+    // 2b. Course buildings
     courseLocations.forEach((cl) => {
       const bx = toX(cl.x);
       const by = toY(cl.y);

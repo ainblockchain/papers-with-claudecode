@@ -5,6 +5,7 @@ import { VillageCanvas } from '@/components/village/VillageCanvas';
 import { VillageSidebar } from '@/components/village/VillageSidebar';
 import { NotificationToast } from '@/components/shared/NotificationToast';
 import { PurchaseModal } from '@/components/purchase/PurchaseModal';
+import { CogitoDialog } from '@/components/village/CogitoDialog';
 import { useVillageStore } from '@/stores/useVillageStore';
 import { useSocialStore } from '@/stores/useSocialStore';
 import { usePurchaseStore } from '@/stores/usePurchaseStore';
@@ -44,6 +45,7 @@ export default function VillagePage() {
         <VillageCanvas />
         <NotificationToast />
         <PurchaseModal />
+        <CogitoDialog />
       </div>
 
       {/* Right Sidebar */}

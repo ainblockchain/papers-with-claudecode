@@ -2,14 +2,14 @@
 
 import { useVillageStore } from '@/stores/useVillageStore';
 import { useSocialStore } from '@/stores/useSocialStore';
-import { Trophy, Users, MapPin, Network } from 'lucide-react';
+import { Trophy, Users, MapPin, Network, Brain } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { FRIEND_COLORS } from '@/constants/game';
 import { VillageMinimap } from './VillageMinimap';
 
 export function VillageSidebar() {
-  const { friends } = useVillageStore();
+  const { friends, setCogitoDialogOpen } = useVillageStore();
   const { leaderboard } = useSocialStore();
 
   return (
@@ -88,6 +88,32 @@ export function VillageSidebar() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Cogito Agent */}
+      <div>
+        <div className="flex items-center gap-2 text-sm font-medium text-[#111827] mb-3">
+          <Brain className="h-4 w-4 text-teal-500" />
+          Cogito Agent
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <div className="h-7 w-7 rounded-full bg-teal-500/20 flex items-center justify-center">
+              <Brain className="h-3.5 w-3.5 text-teal-400" />
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-[#111827]">Knowledge Agent</p>
+            <p className="text-[10px] text-[#6B7280]">A2A &middot; x402</p>
+          </div>
+          <button
+            onClick={() => setCogitoDialogOpen(true)}
+            className="px-2 py-1 text-[10px] font-medium text-teal-600 bg-teal-50 hover:bg-teal-100 rounded transition-colors"
+          >
+            Talk
+          </button>
         </div>
       </div>
 
