@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Activity Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #000000; --charcoal: #0c0a1a; --indigo: #11103a; --deep-purple: #201a72;
+  --violet: #3d2db3; --ultraviolet: #8259ef; --light-purple: #b47aff;
+  --cobalt: #2d84eb; --light-blue: #5aa6ff; --white: #ffffff;
+  --success: #29BC63; --error: #EA1548; --warning: #F5A623; --gold: #FFD700; --green: #29BC63;
+  --bg-card: rgba(32, 26, 114, 0.15); --border-card: rgba(130, 89, 239, 0.25);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --text-primary: #ffffff; --text-secondary: rgba(255, 255, 255, 0.6); --text-muted: rgba(255, 255, 255, 0.3);
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  --radius-sm: 8px; --radius-md: 10px; --radius-pill: 36px;
+}
+
+html { font-size: 15px; }
+body { font-family: var(--font-body); color: var(--text-primary); min-height: 100vh;
+  background: linear-gradient(180deg, var(--black) 0%, var(--charcoal) 15%, var(--indigo) 45%, var(--deep-purple) 80%, var(--violet) 100%);
+  background-attachment: fixed; }
+a { color: var(--light-purple); text-decoration: none; }
+a:hover { color: var(--ultraviolet); text-decoration: underline; }
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 56px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(24px);
+  flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo-mark { width: 32px; height: 32px; background: linear-gradient(135deg, var(--ultraviolet), var(--cobalt));
+  border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.logo-text { font-size: 1rem; font-weight: 300; }
+.logo-text strong { font-weight: 600; color: var(--light-blue); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 12px;
+  border-radius: var(--radius-pill); font-size: 0.68rem; font-weight: 500;
+  letter-spacing: 0.03em; text-transform: uppercase; }
+.badge-live { background: rgba(41,188,99,0.15); border: 1px solid rgba(41,188,99,0.3); color: var(--success); }
+.badge-off { background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: var(--text-muted); }
+
+/* Setup */
+.setup-bar { padding: 10px 28px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border-subtle); background: rgba(0,0,0,0.3); flex-shrink: 0; }
+.setup-label { font-size: 0.68rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.setup-input { padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-card);
+  background: var(--bg-card); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.78rem; outline: none; }
+.setup-input:focus { border-color: var(--ultraviolet); }
+.btn-sm { padding: 6px 16px; border: none; border-radius: var(--radius-pill); color: #fff;
+  font-family: var(--font-body); font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.3s; }
+.btn-sm:hover { opacity: 0.85; }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-connect { background: var(--cobalt); }
+.back-link { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Main layout */
+.main { display: flex; flex: 1; overflow: hidden; }
+
+/* Left: Agents */
+.panel-left { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border-subtle);
+  overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  background: rgba(0,0,0,0.2); }
+
+.section-title { font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--text-muted); display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-subtle); }
+
+/* Agent cards */
+.a-card { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-card); background: var(--bg-card); }
+.a-row { display: flex; align-items: center; gap: 8px; }
+.a-icon { font-size: 20px; }
+.a-name { font-size: 0.82rem; font-weight: 600; }
+.a-persona { font-size: 0.68rem; color: var(--text-muted); font-style: italic; }
+.a-id { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
+.a-stats { display: flex; gap: 12px; margin-top: 6px; }
+.a-stat { font-size: 0.7rem; color: var(--text-secondary); }
+.a-stat strong { color: var(--gold); font-weight: 600; }
+.a-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.a-tag { font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: rgba(130,89,239,0.1); color: var(--text-secondary); }
+
+/* Consultation economy */
+.consult-item { padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid rgba(245,166,35,0.2);
+  background: rgba(245,166,35,0.05); font-size: 0.72rem; }
+.consult-header { display: flex; justify-content: space-between; align-items: center; }
+.consult-fee { color: var(--gold); font-weight: 600; font-family: var(--font-mono); }
+.consult-text { color: var(--text-secondary); margin-top: 4px; }
+
+/* Right: Timeline */
+.panel-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.feed-header { height: 42px; padding: 0 20px; border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  background: rgba(0,0,0,0.15); }
+.feed-title { font-size: 0.78rem; color: var(--text-secondary); }
+.msg-count { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); }
+
+.feed { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.feed::-webkit-scrollbar { width: 4px; }
+.feed::-webkit-scrollbar-track { background: transparent; }
+.feed::-webkit-scrollbar-thumb { background: rgba(130,89,239,0.25); border-radius: 4px; }
+
+/* Timeline events */
+.evt { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+  border-radius: var(--radius-sm); border-left: 3px solid var(--border-card);
+  background: rgba(255,255,255,0.02); animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+.evt-icon { font-size: 16px; min-width: 24px; text-align: center; padding-top: 1px; }
+.evt-body { flex: 1; }
+.evt-title { font-size: 0.78rem; font-weight: 500; }
+.evt-desc { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+.evt-meta { font-family: var(--font-mono); font-size: 0.62rem; color: var(--text-muted); margin-top: 3px; }
+
+.evt.request { border-color: var(--cobalt); }
+.evt.bid { border-color: var(--light-blue); }
+.evt.accepted { border-color: var(--gold); }
+.evt.work { border-color: var(--green); }
+.evt.review { border-color: var(--light-purple); }
+.evt.money { border-color: var(--gold); }
+.evt.consult { border-color: var(--warning); }
+.evt.complete { border-color: var(--success); }
+.evt.raw { border-color: var(--border-subtle); opacity: 0.5; }
+
+.empty-state { flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  text-align: center; color: var(--text-muted); }
+.empty-icon { font-size: 40px; opacity: 0.4; }
+.empty-text { font-size: 0.85rem; }
+
+footer { height: 32px; padding: 0 28px; border-top: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  background: rgba(0,0,0,0.35); font-size: 0.65rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="logo-mark">&#128225;</div>
+      <div class="logo-text"><strong>Agent Explorer</strong> &mdash; Marketplace Activity</div>
+    </div>
+    <div class="header-right">
+      <span id="statusBadge" class="badge badge-off">Disconnected</span>
+      <a href="/" class="back-link">&larr; Dashboard</a>
+    </div>
+  </header>
+
+  <div class="setup-bar">
+    <span class="setup-label">Topic</span>
+    <input id="topicId" class="setup-input" placeholder="0.0.XXXXX" style="width:140px;" />
+    <span class="setup-label">Token</span>
+    <input id="tokenId" class="setup-input" placeholder="0.0.YYYYY" style="width:140px;" />
+    <button id="btnConnect" class="btn-sm btn-connect" onclick="connect()">Connect</button>
+  </div>
+
+  <div class="main">
+    <div class="panel-left">
+      <div class="section-title">Agents</div>
+      <div id="agentList">
+        <div style="padding:16px;text-align:center;font-size:0.75rem;color:var(--text-muted);">Connect to see agents</div>
+      </div>
+      <div class="section-title">Consultation Economy</div>
+      <div id="consultList">
+        <div style="font-size:0.72rem;color:var(--text-muted);padding:6px;">No consultations yet</div>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="feed-header">
+        <span class="feed-title">Activity Timeline</span>
+        <span id="msgCount" class="msg-count">0 events</span>
+      </div>
+      <div id="feed" class="feed">
+        <div class="empty-state">
+          <div class="empty-icon">&#128225;</div>
+          <div class="empty-text">Enter Topic ID to start exploring agent activity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>On-chain data from Hedera Mirror Node</span>
+    <span style="color:var(--border-card);">|</span>
+    <span>Polling every 5s</span>
+    <span style="color:var(--border-card);">|</span>
+    <span>Read-only observer</span>
+  </footer>
+</div>
+
+<script>
+var S = { es: null, count: 0, agents: {}, consultations: [] };
+var $ = function(s) { return document.querySelector(s); };
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+var AGENTS = {
+  analyst:   { icon: '\uD83D\uDD2C', name: 'Analyst',   persona: 'Dr. Iris Chen' },
+  architect: { icon: '\uD83C\uDFD7\uFE0F', name: 'Architect', persona: 'Alex Rivera' },
+  scholar:   { icon: '\uD83C\uDF93', name: 'Scholar',   persona: 'Prof. Nakamura' }
+};
+
+function connect() {
+  var topicId = $('#topicId').value.trim();
+  var tokenId = $('#tokenId').value.trim();
+  if (!topicId) { $('#topicId').focus(); return; }
+
+  if (S.es) { S.es.close(); }
+  S.count = 0; S.agents = {}; S.consultations = [];
+  $('#feed').innerHTML = '';
+  $('#agentList').innerHTML = '';
+  $('#consultList').innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);padding:6px;">No consultations yet</div>';
+  $('#msgCount').textContent = '0 events';
+  $('#statusBadge').className = 'badge badge-off';
+  $('#statusBadge').textContent = 'Connecting...';
+  $('#btnConnect').disabled = true;
+
+  var url = '/api/monitor/feed?topicId=' + encodeURIComponent(topicId);
+  if (tokenId) url += '&tokenId=' + encodeURIComponent(tokenId);
+
+  var es = new EventSource(url);
+  S.es = es;
+
+  es.addEventListener('connected', function() {
+    $('#statusBadge').className = 'badge badge-live';
+    $('#statusBadge').innerHTML = '&#9679; Live';
+    $('#btnConnect').disabled = false;
+    $('#btnConnect').textContent = 'Reconnect';
+  });
+
+  es.addEventListener('hcs_message', function(e) {
+    var d = JSON.parse(e.data);
+    addEvent(d);
+    trackAgent(d);
+    trackConsultation(d);
+  });
+
+  es.addEventListener('raw_message', function(e) {
+    var d = JSON.parse(e.data);
+    addRaw(d);
+  });
+
+  es.addEventListener('poll_error', function(e) {
+    var d = JSON.parse(e.data);
+    addEvent({ type: '_error', _msg: d.message });
+  });
+
+  es.onerror = function() {
+    $('#statusBadge').className = 'badge badge-off';
+    $('#statusBadge').textContent = 'Disconnected';
+    $('#btnConnect').disabled = false;
+    $('#btnConnect').textContent = 'Reconnect';
+  };
+}
+
+/* Event rendering — human-readable, not raw JSON */
+var EVT_CONFIG = {
+  course_request: { icon: '\uD83D\uDCE8', cls: 'request', label: 'New Course Request',
+    detail: function(d) { return 'Paper: <strong>' + esc(d.paperUrl||'') + '</strong> &mdash; Budget: ' + (d.budget||0) + ' KNOW'; } },
+  bid: { icon: '\uD83C\uDFF7\uFE0F', cls: 'bid', label: 'Bid Submitted',
+    detail: function(d) { return '<strong>' + esc(d.role||'') + '</strong> bids ' + (d.price||0) + ' KNOW &mdash; "' + esc((d.pitch||'').slice(0,100)) + '"'; } },
+  bid_accepted: { icon: '\u2705', cls: 'accepted', label: 'Bid Accepted',
+    detail: function(d) { return '<strong>' + esc(d.role||'') + '</strong> accepted at ' + (d.price||0) + ' KNOW'; } },
+  escrow_lock: { icon: '\uD83D\uDD12', cls: 'money', label: 'Escrow Locked',
+    detail: function(d) { return (d.amount||0) + ' KNOW locked in escrow'; } },
+  escrow_release: { icon: '\uD83D\uDCB0', cls: 'money', label: 'Payment Released',
+    detail: function(d) { return (d.amount||0) + ' KNOW paid to <strong>' + esc(d.role||d.toAccountId||'') + '</strong>'; } },
+  deliverable: { icon: '\uD83D\uDCE6', cls: 'work', label: 'Work Delivered',
+    detail: function(d) {
+      var c = d.content || {};
+      var title = c.paperTitle || c.courseTitle || '';
+      return '<strong>' + esc(d.role||'') + '</strong> submitted' + (title ? ': "' + esc(title) + '"' : '');
+    } },
+  client_review: { icon: '\u2B50', cls: 'review', label: 'Client Review',
+    detail: function(d) {
+      var status = d.approved ? '<span style="color:var(--success);">Approved</span>' : '<span style="color:var(--error);">Rejected</span>';
+      return '<strong>' + esc(d.targetRole||'') + '</strong>: ' + status + ' &mdash; ' + (d.score||0) + '/100';
+    } },
+  consultation_request: { icon: '\uD83D\uDCAC', cls: 'consult', label: 'Consultation Request',
+    detail: function(d) { return esc(d.sender||'') + ' asks: "' + esc((d.question||'').slice(0,80)) + '" (offers ' + (d.offeredFee||0) + ' KNOW)'; } },
+  consultation_response: { icon: '\uD83D\uDCA1', cls: 'consult', label: 'Consultation Answer',
+    detail: function(d) { return 'Scholar answers for ' + (d.fee||0) + ' KNOW: "' + esc((d.answer||'').slice(0,80)) + '"'; } },
+  course_complete: { icon: '\uD83C\uDF89', cls: 'complete', label: 'Course Complete',
+    detail: function(d) { return 'Marketplace session finished successfully'; } }
+};
+
+function addEvent(d) {
+  var feed = $('#feed');
+  if (S.count === 0) feed.innerHTML = '';
+
+  var cfg = EVT_CONFIG[d.type] || { icon: '\uD83D\uDD38', cls: '', label: d.type || 'unknown',
+    detail: function(d) { return esc(JSON.stringify(d).slice(0,120)); } };
+
+  var time = '';
+  try { time = new Date(d.timestamp || d.hcsTimestamp).toLocaleTimeString(); } catch(_) {}
+
+  var row = document.createElement('div');
+  row.className = 'evt ' + cfg.cls;
+  row.innerHTML =
+    '<div class="evt-icon">' + cfg.icon + '</div>' +
+    '<div class="evt-body">' +
+      '<div class="evt-title">' + cfg.label + '</div>' +
+      '<div class="evt-desc">' + cfg.detail(d) + '</div>' +
+      '<div class="evt-meta">#' + (d.seq||'') + (time ? ' &middot; ' + time : '') + '</div>' +
+    '</div>';
+  feed.appendChild(row);
+  S.count++;
+  $('#msgCount').textContent = S.count + ' event' + (S.count!==1?'s':'');
+  requestAnimationFrame(function() { feed.scrollTop = feed.scrollHeight; });
+}
+
+function addRaw(d) {
+  var feed = $('#feed');
+  if (S.count === 0) feed.innerHTML = '';
+  var row = document.createElement('div');
+  row.className = 'evt raw';
+  row.innerHTML =
+    '<div class="evt-icon">\uD83D\uDCC4</div>' +
+    '<div class="evt-body">' +
+      '<div class="evt-title">Raw Message</div>' +
+      '<div class="evt-desc" style="font-family:var(--font-mono);font-size:0.68rem;">' + esc(d.raw||'') + '</div>' +
+      '<div class="evt-meta">#' + (d.seq||'') + '</div>' +
+    '</div>';
+  feed.appendChild(row);
+  S.count++;
+  $('#msgCount').textContent = S.count + ' event' + (S.count!==1?'s':'');
+}
+
+/* Agent tracking */
+function trackAgent(d) {
+  var sender = d.sender || '';
+  if (!sender || sender === 'server' || sender === 'requester') return;
+  var role = d.role || guessRole(d);
+  if (!S.agents[sender]) {
+    S.agents[sender] = { accountId: sender, role: role, actions: [], balance: 0 };
+  }
+  var a = S.agents[sender];
+  if (role !== 'unknown') a.role = role;
+  a.actions.push(d.type);
+  if (d.type === 'escrow_release' && d.toAccountId === sender) a.balance += (d.amount || 0);
+  renderAgents();
+}
+
+function guessRole(d) {
+  if (d.type === 'consultation_response') return 'scholar';
+  return d.role || 'unknown';
+}
+
+function renderAgents() {
+  var list = $('#agentList');
+  list.innerHTML = '';
+  Object.values(S.agents).forEach(function(a) {
+    var meta = AGENTS[a.role] || { icon: '\uD83E\uDD16', name: a.role, persona: '' };
+    var card = document.createElement('div');
+    card.className = 'a-card';
+
+    var uniqueActions = [];
+    a.actions.forEach(function(act) { if (uniqueActions.indexOf(act) === -1) uniqueActions.push(act); });
+
+    card.innerHTML =
+      '<div class="a-row"><span class="a-icon">' + meta.icon + '</span>' +
+        '<div><div class="a-name">' + esc(meta.name) + '</div>' +
+        (meta.persona ? '<div class="a-persona">' + esc(meta.persona) + '</div>' : '') + '</div></div>' +
+      '<div class="a-id">' + esc(a.accountId) + '</div>' +
+      '<div class="a-stats">' +
+        '<div class="a-stat">Actions: <strong>' + a.actions.length + '</strong></div>' +
+        (a.balance > 0 ? '<div class="a-stat">Earned: <strong>' + a.balance + ' KNOW</strong></div>' : '') +
+      '</div>' +
+      '<div class="a-actions">' + uniqueActions.map(function(t) { return '<span class="a-tag">' + t + '</span>'; }).join('') + '</div>';
+    list.appendChild(card);
+  });
+}
+
+/* Consultation tracking */
+function trackConsultation(d) {
+  if (d.type !== 'consultation_request' && d.type !== 'consultation_response') return;
+  S.consultations.push(d);
+  renderConsultations();
+}
+
+function renderConsultations() {
+  var list = $('#consultList');
+  list.innerHTML = '';
+  if (S.consultations.length === 0) {
+    list.innerHTML = '<div style="font-size:0.72rem;color:var(--text-muted);padding:6px;">No consultations yet</div>';
+    return;
+  }
+  S.consultations.slice(-6).forEach(function(c) {
+    var isReq = c.type === 'consultation_request';
+    var div = document.createElement('div');
+    div.className = 'consult-item';
+    div.innerHTML =
+      '<div class="consult-header">' +
+        '<span>' + (isReq ? '\uD83D\uDCAC Question' : '\uD83D\uDCA1 Answer') + '</span>' +
+        '<span class="consult-fee">' + (isReq ? c.offeredFee : c.fee) + ' KNOW</span>' +
+      '</div>' +
+      '<div class="consult-text">' + esc((isReq ? c.question : c.answer || '').slice(0, 60)) + '</div>';
+    list.appendChild(div);
+  });
+}
+
+/* Auto-connect from URL params */
+(function() {
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('topicId')) $('#topicId').value = p.get('topicId');
+  if (p.get('tokenId')) $('#tokenId').value = p.get('tokenId');
+  if (p.get('topicId')) connect();
+})();
+</script>
+</body>
+</html>
