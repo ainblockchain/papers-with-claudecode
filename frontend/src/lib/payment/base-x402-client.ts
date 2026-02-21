@@ -1,10 +1,10 @@
 // Client-side x402 fetch using the user's passkey-derived EVM key.
 // No server proxy needed — the user's own wallet signs Base payments.
 
-import { createPublicClient, createWalletClient, http } from 'viem';
+import { createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
-import { toClientEvmSigner } from '@x402/evm';
+import type { ClientEvmSigner } from '@x402/evm';
 import { ExactEvmScheme } from '@x402/evm/exact/client';
 import { wrapFetchWithPayment, x402Client } from '@x402/fetch';
 import { deriveEvmPrivateKey, loadPasskeyInfo } from '@/lib/ain/passkey';
@@ -26,7 +26,14 @@ export function createBaseX402Fetch(): typeof fetch | null {
 
   const evmPrivateKey = deriveEvmPrivateKey(info.publicKey) as `0x${string}`;
   const account = privateKeyToAccount(evmPrivateKey);
-  const signer = toClientEvmSigner(account, basePublicClient);
+
+  // Manually compose ClientEvmSigner: account provides address + signTypedData,
+  // publicClient provides readContract.
+  const signer: ClientEvmSigner = {
+    address: account.address,
+    signTypedData: (msg) => account.signTypedData(msg as Parameters<typeof account.signTypedData>[0]),
+    readContract: (args) => basePublicClient.readContract(args as Parameters<typeof basePublicClient.readContract>[0]),
+  };
 
   const client = new x402Client();
   client.register('eip155:8453' as `${string}:${string}`, new ExactEvmScheme(signer));

@@ -140,10 +140,13 @@ class MultiChainPaymentAdapter {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
+        const errorMsg = res.status === 402
+          ? 'Insufficient USDC balance on Base. Use Skip for demo access.'
+          : (body?.message ?? `Request failed (${res.status})`);
         return {
           success: false,
-          error: body?.message ?? `Request failed (${res.status})`,
-          errorCode: body?.error ?? 'payment_failed',
+          error: errorMsg,
+          errorCode: res.status === 402 ? 'insufficient_funds' : (body?.error ?? 'payment_failed'),
         };
       }
 
@@ -160,9 +163,10 @@ class MultiChainPaymentAdapter {
         explorerUrl,
       };
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Network error';
       return {
         success: false,
-        error: err instanceof Error ? err.message : 'Network error',
+        error: msg.includes('payment payload') ? 'Payment signing failed. Use Skip for demo access.' : msg,
         errorCode: 'network_error',
       };
     }
