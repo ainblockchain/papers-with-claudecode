@@ -76,6 +76,16 @@ export function PurchaseModal() {
               </p>
               {lastPurchaseReceipt && (
                 <div className="mt-4 p-3 bg-[#16162a] rounded-lg text-left space-y-2">
+                  {lastPurchaseReceipt.txHash && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">Tx Hash</span>
+                      <code className="text-xs text-blue-400 font-mono">
+                        {lastPurchaseReceipt.txHash.length > 14
+                          ? `${lastPurchaseReceipt.txHash.slice(0, 6)}...${lastPurchaseReceipt.txHash.slice(-4)}`
+                          : lastPurchaseReceipt.txHash}
+                      </code>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Amount Paid</span>
                     <span className="text-xs text-green-400 font-mono">
@@ -96,6 +106,17 @@ export function PurchaseModal() {
                     <span className="text-xs text-gray-500">Status</span>
                     <span className="text-xs text-green-400">Confirmed</span>
                   </div>
+                  {lastPurchaseReceipt.explorerUrl && (
+                    <a
+                      href={lastPurchaseReceipt.explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      View on {PAYMENT_CHAINS[lastPurchaseReceipt.chain].name} Explorer
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
                 </div>
               )}
             </>

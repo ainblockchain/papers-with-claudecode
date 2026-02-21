@@ -82,7 +82,6 @@ export async function POST(req: NextRequest) {
     const data = await res.json().catch(() => null);
 
     if (res.status === 402) {
-      // wrapFetchWithPayment tried to auto-pay but failed (likely insufficient USDC)
       console.error('[x402/base-proxy] Auto-payment failed — wallet may lack USDC on Base Sepolia');
       return NextResponse.json(
         {
@@ -101,7 +100,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    // Extract txHash from PAYMENT-RESPONSE header (base64-encoded JSON from withX402)
+    let txHash: string | undefined;
+    const paymentResponseHeader =
+      res.headers.get('PAYMENT-RESPONSE') || res.headers.get('X-PAYMENT-RESPONSE');
+    if (paymentResponseHeader) {
+      try {
+        const decoded = JSON.parse(
+          Buffer.from(paymentResponseHeader, 'base64').toString('utf-8'),
+        );
+        txHash = decoded.transaction || decoded.txHash;
+      } catch {
+        console.warn('[x402/base-proxy] Failed to decode PAYMENT-RESPONSE header');
+      }
+    }
+
+    const explorerUrl = txHash
+      ? `https://sepolia.basescan.org/tx/${txHash}`
+      : 'https://sepolia.basescan.org';
+
+    return NextResponse.json({
+      ...data,
+      txHash,
+      explorerUrl,
+    });
   } catch (err) {
     console.error('[x402/base-proxy] Payment proxy error:', err);
     return NextResponse.json(

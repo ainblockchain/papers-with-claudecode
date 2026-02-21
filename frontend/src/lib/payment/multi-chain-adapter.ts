@@ -97,12 +97,18 @@ class MultiChainPaymentAdapter {
         };
       }
 
+      // Extract txHash from PAYMENT-RESPONSE header (base64-encoded JSON from withX402)
+      const txHash = this.extractTxHashFromResponse(res);
       const data = await res.json();
+      const explorerUrl = txHash
+        ? `https://testnet.kitescan.ai/tx/${txHash}`
+        : data.explorerUrl;
+
       return {
         success: true,
         receiptId: data.enrollment?.paperId,
-        txHash: data.txHash,
-        explorerUrl: data.explorerUrl,
+        txHash: txHash || data.txHash,
+        explorerUrl,
       };
     } catch (err) {
       return {
@@ -186,6 +192,19 @@ class MultiChainPaymentAdapter {
         error: err instanceof Error ? err.message : 'Network error',
         errorCode: 'network_error',
       };
+    }
+  }
+
+  // ── Shared: Extract txHash from x402 PAYMENT-RESPONSE header ──
+  private extractTxHashFromResponse(res: Response): string | undefined {
+    const header =
+      res.headers.get('PAYMENT-RESPONSE') || res.headers.get('X-PAYMENT-RESPONSE');
+    if (!header) return undefined;
+    try {
+      const decoded = JSON.parse(atob(header));
+      return decoded.transaction || decoded.txHash || undefined;
+    } catch {
+      return undefined;
     }
   }
 
