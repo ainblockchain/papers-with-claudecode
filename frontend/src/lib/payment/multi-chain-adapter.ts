@@ -140,13 +140,10 @@ class MultiChainPaymentAdapter {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        const errorMsg = res.status === 402
-          ? 'Insufficient USDC balance on Base. Use Skip for demo access.'
-          : (body?.message ?? `Request failed (${res.status})`);
         return {
           success: false,
-          error: errorMsg,
-          errorCode: res.status === 402 ? 'insufficient_funds' : (body?.error ?? 'payment_failed'),
+          error: body?.message ?? body?.error ?? `Request failed (${res.status})`,
+          errorCode: body?.error ?? 'payment_failed',
         };
       }
 
