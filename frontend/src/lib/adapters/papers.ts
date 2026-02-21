@@ -256,16 +256,19 @@ class GitHubPapersAdapter implements PapersAdapter {
   }
 
   async getPaperById(id: string): Promise<Paper | null> {
+    // Normalize: /api/courses uses "slug--course" but this adapter uses "slug/course"
+    const normalized = id.includes('--') ? id.replace('--', '/') : id;
     try {
       const papers = await this.getPapers();
-      return papers.find((p) => p.id === id) ?? null;
+      return papers.find((p) => p.id === id || p.id === normalized) ?? null;
     } catch {
-      return this.cachedPapers.find((p) => p.id === id) ?? null;
+      return this.cachedPapers.find((p) => p.id === id || p.id === normalized) ?? null;
     }
   }
 
   getPaperByIdSync(id: string): Paper | null {
-    return this.cachedPapers.find((p) => p.id === id) ?? null;
+    const normalized = id.includes('--') ? id.replace('--', '/') : id;
+    return this.cachedPapers.find((p) => p.id === id || p.id === normalized) ?? null;
   }
 }
 
