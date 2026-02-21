@@ -3,8 +3,8 @@
   "description": "Meet 0G — the world's first decentralized AI operating system. With four core services (Chain, Storage, Compute, and DA), 0G is redefining how AI infrastructure works. In this beginner-friendly course, an AI tutor guides you step by step — from wallet setup to file uploads, AI inference, and building a verifiable AI pipeline. No blockchain experience required: 3 modules, 12 hands-on concepts, and you'll deploy your first app on 0G.",
   "githubUrl": "https://github.com/0gfoundation",
   "docsUrl": "https://docs.0g.ai/",
-  "thumbnailUrl": "Gx1Chz4aYAAKw2D.png",
-  "backgroundUrl": "unnamed.jpg",
+  "thumbnailUrl": "assets/thumbnail.png",
+  "backgroundUrl": "assets/developer-bg.jpg",
   "authors": [
     { "name": "0G Labs" }
   ],
@@ -12,5 +12,5 @@
   "organization": { "name": "0G Labs" },
   "submittedBy": "community",
   "sortOrder": 20,
-  "badgeUrl": "Gemini_Generated_Image_bctqrrbctqrrbctq.png"
+  "badgeUrl": "assets/badge.png"
 }
