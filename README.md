@@ -116,6 +116,12 @@ See individual module READMEs:
 - [demo_script.md](demo_script.md) — Demo narration script
 - [demo_screenplay.md](demo_screenplay.md) — Demo screen actions and timing
 
+## Related
+
+- [awesome-papers-with-claude-code](https://github.com/ainblockchain/awesome-papers-with-claude-code) — Curated collection of 8 papers (Transformers, ViT, DPO, LLaMA 2, etc.) turned into interactive courses
+- [AINscan](https://ainscan.ainetwork.ai) — Blockchain explorer with knowledge graph visualization
+- [ain-js](https://github.com/ainblockchain/ain-js) — AIN blockchain SDK with knowledge module
+
 ## License
 
 MIT
