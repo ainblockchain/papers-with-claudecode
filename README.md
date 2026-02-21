@@ -116,6 +116,49 @@ See individual module READMEs:
 - [demo_script.md](demo_script.md) — Demo narration script
 - [demo_screenplay.md](demo_screenplay.md) — Demo screen actions and timing
 
+## Changes to External Repositories
+
+Changes made to outside repositories during ETHDenver 2026 (Feb 2026) for this project.
+
+### [ainblockchain/ain-js](https://github.com/ainblockchain/ain-js) — AIN Blockchain SDK
+
+Knowledge module, x402 payments, LLM integration, and Cogito module (v1.13.3 → v1.15.0):
+
+- [`d69684f`](https://github.com/ainblockchain/ain-js/commit/d69684f1d07fea78a0fb02e974f3aa8f6abc9982) Add knowledge module with graph backend abstraction, Neo4j/memory implementations, and benchmarks
+- [`f9fad3c`](https://github.com/ainblockchain/ain-js/commit/f9fad3c6f35ec6466ce8e1890750b8502985ba52) Add P256 key type support to wallet for multi-curve signing
+- [`decad3d`](https://github.com/ainblockchain/ain-js/commit/decad3d49b830e4385705e36353175288945944d) Add SET_FUNCTION ops to setupApp() for knowledge graph sync triggers
+- [`da5ca8a`](https://github.com/ainblockchain/ain-js/commit/da5ca8a9443a87b82a0c7afc47f26e5708825366) Add x402 gated publishing, AIN-token payments, and knowledge graph structure
+- [`9e8cc74`](https://github.com/ainblockchain/ain-js/commit/9e8cc74e2cbf69ea9548d85798f03359be65858d) Add transaction batching to Neo4jBackend to reduce bolt roundtrips
+- [`3b0bbcd`](https://github.com/ainblockchain/ain-js/commit/3b0bbcd1274ef357c2cd2cdde591e2acd953127a) Fix secp256k1 native module build failure on Node.js 20
+- [`5ecf57b`](https://github.com/ainblockchain/ain-js/commit/5ecf57b359c372cc30f99099d2e99e38bc5b4a3c) Upgrade TypeScript target to es2022 for neo4j-driver-core compatibility
+- [`b7d391f`](https://github.com/ainblockchain/ain-js/commit/b7d391f4e3c1548d495dc4c6678802beb8bca05e) Bump version to 1.14.0
+- [`08504bd`](https://github.com/ainblockchain/ain-js/commit/08504bd99573d01de633e268073ef4dab8e0e252) Add LLM module and AI-powered knowledge methods
+- [`44d4834`](https://github.com/ainblockchain/ain-js/commit/44d483498ed6de7a6d93f5639986f6a32d37f41d) Add comprehensive tests for LLM and Knowledge modules (52 tests)
+- [`ee4fb67`](https://github.com/ainblockchain/ain-js/commit/ee4fb6769b020f4c1f3cae559b72c8d82ab83d98) Expose LLM thinking in ain-js: InferResult, aiExplore, aiGenerateCourse, aiAnalyze
+- [`e17434b`](https://github.com/ainblockchain/ain-js/commit/e17434b698eae9341eb6443f39a804c37833a600) Bump version to 1.14.1
+- [`fff8efa`](https://github.com/ainblockchain/ain-js/commit/fff8efad85b679fc390aa7462bf3b3bc7931a621) Add deployment SDK module for container management
+- [`9ff1b5d`](https://github.com/ainblockchain/ain-js/commit/9ff1b5d89d4105f2c1d21eb070dc780efb809b99) Add ain.cogito module for recipe management
+- [`59bd333`](https://github.com/ainblockchain/ain-js/commit/59bd3332ad24b8bc57835ccddba7f792dcfefa71) Fix: serialize recipe arrays to CSV for AIN state DB compatibility
+- [`b93a9be`](https://github.com/ainblockchain/ain-js/commit/b93a9be73848e5a35ca4136cc6661873d584cabb) Bump version to 1.15.0
+
+### [ainblockchain/ainscan](https://github.com/ainblockchain/ainscan) — Blockchain Explorer
+
+Built from scratch and deployed at [ainscan.ainetwork.ai](https://ainscan.ainetwork.ai) during ETHDenver 2026:
+
+- [`fd71ecf`](https://github.com/ainblockchain/ainscan/commit/fd71ecf08e90fe42cda74465046d5745e2f8863d) Initial commit: Next.js blockchain explorer with direct node RPC
+- [`6b35709`](https://github.com/ainblockchain/ainscan/commit/6b357098a94391de562082f196266987280617aa) Fix database explorer for large nodes with shallow fetch fallback
+- [`33c2ce9`](https://github.com/ainblockchain/ainscan/commit/33c2ce92822d7cddfc88ad98be0536d5f39fb9b8) Add knowledge graph visualization with Neo4j, x402 payment, and passkey auth
+- [`6425fe6`](https://github.com/ainblockchain/ainscan/commit/6425fe61aa9f0748fbb194e95d7671fc725f160a) Replace direct Neo4j connection with JSON-RPC calls through blockchain node
+- [`e9d0619`](https://github.com/ainblockchain/ainscan/commit/e9d0619c83303afd81d7a74b813b7a9d06858c68) Fix Database Explorer, transactions, and knowledge graph edges
+- [`a49faf8`](https://github.com/ainblockchain/ainscan/commit/a49faf85503077fc55769ffa798466536ab70c23) Add mobile hamburger menu with all nav links including Knowledge
+- [`92e13a1`](https://github.com/ainblockchain/ainscan/commit/92e13a14489e58ba7347c6a3f294339a593fdf77) Fix Vercel build timeout: switch pages to force-dynamic rendering
+- [`6c804e1`](https://github.com/ainblockchain/ainscan/commit/6c804e18564c030ef48cc0fd7c744cde37440c60) Use REST endpoints to skip empty blocks on home and transactions pages
+- [`9d90672`](https://github.com/ainblockchain/ainscan/commit/9d90672c0c5d949fb16a1772c4003b8eb139a57f) Fix transaction detail page: normalize tx_body fields and add block fallback
+- [`7bfc55d`](https://github.com/ainblockchain/ainscan/commit/7bfc55dc345a4c7407b99e6dd79b91a19ba3bcc3) Add block scan fallback and blocks filter toggle
+- [`231feba`](https://github.com/ainblockchain/ainscan/commit/231feba5784ad43b31cab898a61e13f4856ef766) Add retry with backoff for rate-limited RPC and reduce parallelism
+- [`b794f1d`](https://github.com/ainblockchain/ainscan/commit/b794f1dc2099df1e7034c3e152d365d306f8c777) Fix transaction detail page showing no data
+- [`2455619`](https://github.com/ainblockchain/ainscan/commit/245561927ccf54214e03a237e984e2112991a911) Add README with features, tech stack, and getting started
+
 ## Related
 
 - [awesome-papers-with-claude-code](https://github.com/ainblockchain/awesome-papers-with-claude-code) — Curated collection of 8 papers (Transformers, ViT, DPO, LLaMA 2, etc.) turned into interactive courses
